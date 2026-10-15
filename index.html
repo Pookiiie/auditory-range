@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f7f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0e0f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Auditory Range">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Auditory Range</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout: one wall of covers in book order, split by year with sticky year markers;
+   album detail opens as a full-height sheet over the wall. Covers carry the colour; the UI recedes. */
+:root{
+  --bg:#f7f7f7; --surface:#ffffff; --raise:#ececec; --track:#c9c9c9; --ink:#111111; --muted:#5c5c5c; --line:#dcdcdc;
+  --accent:#d63645; --accent-ink:#ffffff; --heard:#1f8a4c; --logo-red:#e0434f; --dim:.42; --dimsat:.2;
+  --f-display:"Alegreya", "Iowan Old Style", Georgia, serif;
+  --f-ui:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --tile:96px; --gap:6px; --radius:3px;
+  --shadow:0 18px 50px rgba(15,18,25,.18);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0e0f; --surface:#18181a; --raise:#222224; --track:#38383c; --ink:#f2f0ee; --muted:#9a9a9f; --line:#2c2c30;
+  --accent:#f0525e; --accent-ink:#ffffff; --heard:#2a9d5c; --logo-red:#ee4d5a; --dim:.4; --dimsat:.15;
+  --shadow:0 18px 50px rgba(0,0,0,.55); color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0e0e0f; --surface:#18181a; --raise:#222224; --track:#38383c; --ink:#f2f0ee; --muted:#9a9a9f; --line:#2c2c30;
+  --accent:#f0525e; --accent-ink:#ffffff; --heard:#2a9d5c; --logo-red:#ee4d5a; --dim:.4; --dimsat:.15;
+  --shadow:0 18px 50px rgba(0,0,0,.55); color-scheme:dark; }
+
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-ui);font-size:16px;font-variant-numeric:tabular-nums;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- header ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:14px;padding:10px 16px;max-width:1800px;margin:0 auto;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand{align-items:center!important}
+.brand .logo{height:44px;width:auto;flex:none;color:var(--ink)}
+.brand .wm{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--f-brand);font-weight:400;font-size:22px;letter-spacing:.005em;line-height:1}
+.brand span{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;margin-top:4px}
+.count{display:flex;align-items:baseline;gap:6px;margin-left:4px}
+.count .n{font-family:var(--f-mono);font-size:18px;font-weight:500}
+.count .of{color:var(--muted);font-size:13px}
+.spacer{flex:1}
+a.btn{text-decoration:none;color:inherit}
+.linkish{border:0;background:none;padding:4px 2px;font-size:13px;color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;align-self:center}
+.linkish:hover{color:var(--ink);text-decoration-color:currentColor}
+.linkish:disabled{opacity:.6;cursor:default}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;min-height:36px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.ghost{background:transparent}
+.btn svg{width:16px;height:16px;flex:none}
+.m-only{display:none!important}
+.iconbtn{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:inline-grid;place-items:center;flex:none}
+.iconbtn svg{width:18px;height:18px}
+.next-chip{display:flex;align-items:center;gap:10px;border:0;background:var(--accent);color:#fff;border-radius:10px;padding:5px 6px 5px 5px;min-height:0;max-width:min(420px,100%);text-align:left}
+.next-chip:hover{filter:brightness(1.06)}
+.next-chip img,.next-chip .ph{width:36px;height:36px;border-radius:5px;object-fit:cover;flex:none;background:rgba(255,255,255,.2)}
+.next-chip .t{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.2}
+.next-chip .t small{font-size:10.5px;color:rgba(255,255,255,.82);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.next-chip .t #nextTitle{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.next-chip .t #nextTitle b{font-weight:700}
+.next-chip .t #nextTitle i{font-style:normal;color:rgba(255,255,255,.85)}
+.next-chip .chev{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.18);margin-left:4px}
+.next-chip .chev svg{width:14px;height:14px}
+
+/* decade strip */
+.decades{display:flex;gap:3px;padding:0 16px 10px;max-width:1800px;margin:0 auto}
+.dec{flex:var(--w) 1 0;min-width:30px;border:0;background:none;padding:0;text-align:left;container-type:inline-size}
+.dec .dbar{height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+.dec .dbar i{display:block;height:100%;width:var(--p);background:var(--accent);border-radius:3px}
+.dec .lb{display:flex;justify-content:flex-start;gap:6px;font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden}
+.dec .lb em{font-style:normal;font-family:var(--f-mono)}
+@container (max-width:84px){ .dec .lb em{display:none} }
+
+/* toolbar */
+.tools{display:flex;gap:8px;align-items:center;padding:0 16px 10px;max-width:1800px;margin:0 auto;flex-wrap:wrap}
+.search{flex:1 1 220px;min-width:0;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 14px;min-height:38px}
+.top > .next-chip{margin:0 16px 10px;width:calc(100% - 32px);max-width:none}
+.fdot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+@media (max-width:640px){
+  .m-only{display:inline-grid!important}
+  .hm{display:none}
+  .top-in .iconbtn{width:31px;height:31px}
+  .top-in .iconbtn svg{width:16px;height:16px}
+  .top-in{gap:4px!important;padding-inline:12px!important;flex-wrap:nowrap!important}
+  .top-in .count{margin-right:auto;margin-left:6px}
+  .fv-list{grid-template-columns:1fr}
+  .brand .logo{height:30px!important}
+  .count .n{font-size:16px}
+  .tools{display:none}
+  .tools.searching,.tools.filtering{display:flex}
+  .tools #searchBtn{display:none}
+  .tools.filtering .search{display:none}
+}
+.search svg{width:16px;height:16px;color:var(--muted);flex:none}
+.tools.searching .chips,.tools.searching .zoom,.tools.searching #searchBtn{display:none}
+.search input{border:0;background:transparent;outline:none;width:100%;min-width:0;padding:8px 0}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 12px;font-size:13px;min-height:34px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.zoom{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.zoom input{width:110px;accent-color:var(--accent)}
+@media (max-width:640px){ .zoom{display:none} .brand span{display:none} .brand .logo{height:36px} .top-in{gap:10px} .next-chip{order:5;flex:1 1 100%;max-width:none} .spacer{display:block} }
+
+/* ---------- wall ---------- */
+main{max-width:1800px;margin:0 auto;padding-block:8px 80px;padding-inline:16px}
+.year{display:grid;grid-template-columns:64px 1fr;gap:12px;margin-bottom:var(--gap)}
+.year h2{margin:0;position:sticky;top:calc(var(--toph,150px) + 6px);align-self:start;font-family:var(--f-display);font-weight:400;font-size:26px;line-height:1;letter-spacing:-.01em;color:var(--muted);padding-top:2px}
+.year h2 small{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:0;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tile),1fr));gap:var(--gap);min-width:0}
+@media (max-width:640px){
+  .year{grid-template-columns:1fr;gap:6px;margin-bottom:14px}
+  .year h2{position:static;font-size:22px;display:flex;align-items:baseline;gap:10px}
+  .year h2 small{margin:0}
+  .grid{grid-template-columns:repeat(var(--cols,4),1fr)}
+}
+.tile{position:relative;aspect-ratio:1;border:0;padding:0;border-radius:var(--radius);overflow:hidden;background:var(--c,var(--raise));display:block;width:100%;max-width:100%}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s, filter .25s}
+.tile img.on{opacity:1}
+.tile:not(.heard) img{filter:saturate(var(--dimsat)) brightness(.9)}
+.tile:not(.heard){opacity:var(--dim)}
+.tile:not(.heard):hover,.tile:not(.heard):focus-visible{opacity:1}
+.tile:not(.heard):hover img{filter:none}
+.tile .num{position:absolute;left:4px;bottom:4px;font-family:var(--f-mono);font-size:10px;padding:1px 5px;border-radius:2px;background:rgba(0,0,0,.6);color:#fff;opacity:0;transition:opacity .2s}
+.tile:hover .num,.tile:focus-visible .num,.big .tile .num{opacity:1}
+.tile.next{opacity:1;outline:3px solid var(--accent);outline-offset:2px}
+.tile.next img{filter:none}
+.tile.next::after{content:"NEXT";position:absolute;top:4px;right:4px;font:600 9px/1 var(--f-ui);letter-spacing:.1em;padding:4px 6px;border-radius:2px;background:var(--accent);color:var(--accent-ink)}
+.tile.miss{display:none}
+.no-match{color:var(--muted);padding:40px 0;text-align:center}
+.empty-note{color:var(--muted);padding:40px 0;text-align:center}
+
+/* ---------- album sheet ---------- */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:stretch;justify-content:center;background:rgba(8,9,12,.55);padding:env(safe-area-inset-top,0px) 0 0}
+.panel{background:var(--surface);width:min(1180px,100%);height:100%;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);box-shadow:var(--shadow);overflow:hidden}
+.art{position:relative;background:var(--c,#111);display:flex;align-items:center;justify-content:center;min-height:0}
+.art.drop{outline:3px dashed var(--accent);outline-offset:-10px}
+.art .hint-drop{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:#fff;background:rgba(0,0,0,.55);padding:4px 10px;border-radius:999px;white-space:nowrap}
+.art img{width:100%;height:100%;object-fit:contain;display:block}
+.art .loading{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(18px) saturate(1.1);transform:scale(1.08)}
+.info{display:flex;flex-direction:column;min-height:0;min-width:0}
+.bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.bar .pos{font-family:var(--f-mono);font-size:13px;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scroll{overflow:auto;padding:22px 26px 40px;min-height:0;-webkit-overflow-scrolling:touch}
+.kicker{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.02em}
+.ttl{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,3.4vw,42px);line-height:1.05;letter-spacing:-.015em;margin:6px 0 4px;text-wrap:balance}
+.who{font-size:18px;font-weight:500;margin:0 0 14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
+.toggle-heard[aria-pressed="true"]{background:var(--heard);color:#fff;border-color:transparent}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid var(--line)}
+.facts dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.07em;padding-top:2px}
+.facts dd{margin:0;min-width:0}
+.about{font-family:var(--f-ui);font-size:16px;line-height:1.55;margin:0 0 6px;max-width:62ch}
+.wikilink{font-size:13px;color:var(--muted)}
+.wikilink a{color:inherit}
+.journal{margin:4px 0 26px;padding:14px 14px 12px 16px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 5%,transparent);border-radius:0 10px 10px 0}
+.journal h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);margin:0 0 10px;display:flex;align-items:center;gap:10px}
+.journal h3 .save{font-family:var(--f-mono);text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.row label{font-size:13px;color:var(--muted)}
+.row input[type=date]{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px;min-height:36px}
+.headrow{display:grid;grid-template-columns:14px 1fr 30px;gap:6px;margin-top:4px}
+.headrow[hidden]{display:none}
+.headline{grid-column:1/3;margin-left:-2px;field-sizing:content;width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;font-family:var(--f-ui);font-weight:700;color:var(--ink);font-size:16px;line-height:1.45;resize:none;overflow:hidden;min-height:34px}
+.headline:hover{border-color:var(--line)}
+.headline:focus{border-color:var(--muted);background:var(--bg);outline:none}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.addrow .addb{margin:0}
+.actions .brk{display:none}
+@media (max-width:640px){ .actions .brk{display:block;flex-basis:100%;height:0} .actions{row-gap:4px} }
+.btn.play{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding-inline:16px 18px}
+.btn.play:hover{filter:brightness(1.08)}
+.btn.play svg{width:14px;height:14px}
+a.iconbtn{color:inherit;text-decoration:none}
+.iconbtn.wk span{font-family:"Linux Libertine","Georgia","Times New Roman",serif;font-size:19px;line-height:1;letter-spacing:-.04em;margin-top:1px}
+.fav-btn[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.fav-btn[aria-pressed="true"] svg{fill:currentColor}
+.tile .fv{position:absolute;top:4px;left:4px;width:16px;height:16px;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));pointer-events:none}
+.tile .fv svg{width:100%;height:100%;fill:var(--accent);stroke:#fff;stroke-width:1.5}
+.tile .yr{position:absolute;right:4px;bottom:4px;font-size:10px;padding:1px 5px;border-radius:2px;background:rgba(0,0,0,.6);color:#fff;opacity:0;transition:opacity .2s;pointer-events:none}
+.tile:hover .yr,.tile:focus-visible .yr{opacity:1}
+/* tracks + wikipedia extras */
+.tracks{margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.tracks h3,.wmore h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;font-weight:500}
+.tracks h4{font-size:13px;color:var(--muted);font-weight:500;margin:12px 0 4px}
+.tracks ol{list-style:none;margin:0;padding:0;columns:1}
+.tracks li{display:grid;grid-template-columns:26px 1fr auto;gap:8px;padding:4px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);font-size:15px;break-inside:avoid}
+.tracks li:last-child{border-bottom:0}
+.tracks li .i{color:var(--muted);text-align:right}
+.tracks li .d{color:var(--muted)}
+.tracks li small{display:block;color:var(--muted);font-size:12px}
+.tracks .tot{font-size:13px;color:var(--muted);margin-top:6px}
+.wmore{margin-top:14px}
+.wmore details{border-top:1px solid var(--line);padding:10px 0}
+.wmore summary{cursor:pointer;font-family:var(--f-display);font-size:18px;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wmore summary::-webkit-details-marker{display:none}
+.wmore summary::after{content:"+";color:var(--muted);font-family:var(--f-ui);font-size:20px}
+.wmore details[open] summary::after{content:"–"}
+.wmore details p{font-size:15.5px;line-height:1.55;margin:8px 0 0;max-width:62ch}
+.wmore .src{font-size:12px;color:var(--muted);margin-top:14px}
+.wmore .src a{color:inherit}
+/* favourites page */
+.favpage{position:fixed;inset:0;z-index:45;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,0px)}
+.fv-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.fv-top h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1}
+.fv-top h2 span{font-family:var(--f-ui);font-weight:400;font-size:15px;color:var(--muted);margin-left:6px}
+.fv-list{max-width:1200px;margin:0 auto;padding:20px 16px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px 20px}
+.fv-card{display:grid;grid-template-columns:112px 1fr;gap:14px;align-items:start;text-align:left;border:0;background:none;padding:0;color:inherit}
+.fv-card img,.fv-card .ph{width:112px;height:112px;object-fit:cover;border-radius:var(--radius);background:var(--c,var(--raise));display:block}
+.fv-card .k{font-size:12px;color:var(--muted)}
+.fv-card b{display:block;font-family:var(--f-display);font-size:19px;line-height:1.15;margin:2px 0}
+.fv-card .a{font-size:14px;font-weight:500}
+.fv-card .h{font-size:14px;font-weight:700;margin-top:6px;line-height:1.35}
+.fv-card:hover b{text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
+.fv-empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:60px 0;max-width:46ch;margin:0 auto}
+.bullets{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.bullets li{display:grid;grid-template-columns:14px 1fr 30px;align-items:start;gap:6px}
+.bullets li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:14px;justify-self:center}
+.bullets textarea{field-sizing:content;width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;resize:none;overflow:hidden;line-height:1.45;min-height:34px}
+.bullets textarea:hover{border-color:var(--line)}
+.bullets textarea:focus{border-color:var(--muted);background:var(--bg);outline:none}
+.bullets .x{border:0;background:none;color:var(--muted);width:30px;height:30px;border-radius:50%;opacity:.5}
+.bullets .x:hover{opacity:1;background:var(--raise)}
+.addb{margin-top:8px}
+.hint{font-size:12px;color:var(--muted);margin-top:10px}
+.readonly-note{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;margin-top:12px}
+@media (max-width:860px){
+  .sheet{padding:0}
+  .panel{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:100%}
+  .art{max-height:min(46vh,100vw);aspect-ratio:1/1;justify-self:center;width:100%}
+  .panel{overflow:auto;display:block}
+  .info{min-height:auto}
+  .bar{position:sticky;top:0;background:var(--surface);z-index:2}
+  .scroll{overflow:visible;padding:18px 16px 60px}
+}
+
+/* ---------- dialogs ---------- */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(8,9,12,.55);display:grid;place-items:center;padding:16px}
+.card{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);width:min(640px,100%);max-height:min(88vh,100%);overflow:auto;padding:22px}
+.card h2{font-family:var(--f-display);font-weight:500;font-size:28px;margin:0 0 4px}
+.card p{color:var(--muted);margin:0 0 16px;max-width:60ch}
+.card .list{display:flex;flex-direction:column;gap:10px}
+.opt{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.opt b{display:block;font-size:15px}
+.opt span{font-size:13px;color:var(--muted)}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0 18px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat b{display:block;font-family:var(--f-mono);font-size:22px;font-weight:500}
+.stat span{font-size:12px;color:var(--muted)}
+.hbar{display:grid;grid-template-columns:72px 1fr 64px;gap:10px;align-items:center;font-size:13px;margin:5px 0}
+.hbar .track{height:10px;background:var(--raise);border-radius:5px;overflow:hidden}
+.hbar .track i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.hbar .v{font-family:var(--f-mono);color:var(--muted);text-align:right}
+.card h4{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.banner{max-width:1800px;margin:8px auto 0;padding:0 16px}
+.banner div{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+
+/* stats page */
+.st-list{max-width:860px;margin:0 auto;padding:18px 16px 70px}
+.st-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+.st-big{border-radius:12px;background:var(--surface);border:1px solid var(--line);padding:14px}
+.st-big b{display:block;font-family:var(--f-display);font-weight:700;font-size:clamp(26px,6vw,40px);line-height:1}
+.st-big span{font-size:13px;color:var(--muted)}
+.st-sec{margin-top:30px}
+.st-sec h3{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0 0 6px}
+.st-sub{font-size:14px;color:var(--muted);margin:6px 0 0;max-width:62ch}
+.st-albs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:10px}
+.st-alb{display:grid;grid-template-columns:72px 1fr;gap:12px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px;color:inherit;align-items:start}
+.st-alb img,.st-alb .ph{width:72px;height:72px;object-fit:cover;border-radius:4px;background:var(--c,var(--raise));display:block}
+.st-alb .k{font-size:12px;color:var(--muted)}
+.st-alb b{display:block;font-family:var(--f-display);font-size:17px;line-height:1.15;margin:1px 0}
+.st-alb .a{font-size:13px;font-weight:500}
+.st-alb .q{font-size:13px;margin-top:5px;line-height:1.35;color:var(--ink)}
+.st-alb:hover{border-color:var(--muted)}
+.st-hours{border-radius:12px;background:var(--surface);border:1px solid var(--line);padding:16px}
+.st-hnum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.st-hnum b{font-family:var(--f-display);font-weight:700;font-size:clamp(44px,10vw,64px);line-height:1;color:var(--accent)}
+.st-hnum span{color:var(--muted);font-size:15px}
+.st-hbar{height:10px;border-radius:5px;background:var(--track);overflow:hidden;margin:12px 0 4px}
+.st-hbar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.st-facts{margin:12px 0 0;padding-left:18px;font-size:15px;line-height:1.5}
+.st-facts li::marker{color:var(--accent)}
+.st-jwrap{position:relative;border-radius:12px;background:var(--surface);border:1px solid var(--line);padding:10px 8px 4px;margin-top:8px}
+.st-journey{width:100%;height:auto;display:block;touch-action:pan-y}
+.st-journey .gl{stroke:var(--line);stroke-width:1}
+.st-journey .ax{fill:var(--muted);font-size:11px;font-family:var(--f-ui)}
+.st-journey .area{fill:color-mix(in srgb,var(--accent) 14%,transparent)}
+.st-journey .ln{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round}
+.st-journey .proj{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 5}
+.st-journey .dot{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.st-journey .hov line{stroke:var(--ink);stroke-width:1;opacity:.35}
+.st-journey .hov circle{fill:var(--ink)}
+.st-tip{position:absolute;top:6px;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:12px;padding:5px 9px;border-radius:7px;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.st-years{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:thin}
+.st-years .chip{flex:none}
+.st-years .chip small{opacity:.6;font-size:11px}
+.st-years .chip:disabled{opacity:.35;cursor:default}
+.st-cal{border-radius:12px;background:var(--surface);border:1px solid var(--line);padding:12px 10px;overflow-x:auto}
+.st-calsvg{width:100%;min-width:560px;height:auto;display:block}
+.st-calsvg .ax{fill:var(--muted);font-size:8.5px;font-family:var(--f-ui)}
+.st-calsvg rect.c0{fill:var(--raise)}
+.st-calsvg rect.c1{fill:color-mix(in srgb,var(--accent) 45%,var(--raise))}
+.st-calsvg rect.c2{fill:color-mix(in srgb,var(--accent) 75%,var(--raise))}
+.st-calsvg rect.c3{fill:var(--accent)}
+.st-calsvg rect[data-d]{cursor:pointer}
+.st-calsvg rect.sel{stroke:var(--ink);stroke-width:1.5}
+.st-sec .statgrid{margin-top:8px}
+@media (max-width:640px){ .st-hero{gap:6px} .st-big{padding:10px} .st-albs{grid-template-columns:1fr} }
+
+.form{display:grid;gap:10px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.form input{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:16px;color:var(--ink)}
+.howto{margin-top:12px;font-size:14px}.howto summary{cursor:pointer;color:var(--accent);font-weight:500}.howto ol{padding-left:20px;line-height:1.5}.howto a{color:var(--accent)}
+.card code{font-size:.92em;background:var(--raise);padding:1px 5px;border-radius:4px}
+.sdot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;display:none}
+.sdot[data-s="err"]{display:block;background:#e0a100}
+.banner .linkish{color:var(--accent);font-size:14px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="top-in">
+    <div class="brand" role="img" aria-label="Auditory Range"><svg class="logo" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="20 200 714 360"><defs><clipPath id="arc"><path d="M0,0 H722 V754 H96 V404 H0 Z"/></clipPath></defs><path d="M-550.5,381.0 C-524.7,306.1 -498.8,238.0 -473.0,238.0 C-447.2,238.0 -421.3,306.1 -395.5,381.0 C-369.7,455.9 -343.8,524.0 -318.0,524.0 C-292.2,524.0 -266.3,455.9 -240.5,381.0 C-214.7,306.1 -188.8,238.0 -163.0,238.0 C-137.2,238.0 -111.3,306.1 -85.5,381.0 C-59.7,455.9 -33.8,524.0 -8.0,524.0 C17.8,524.0 43.7,455.9 69.5,381.0 C95.3,306.1 121.2,238.0 147.0,238.0 C172.8,238.0 198.7,306.1 224.5,381.0 C250.3,455.9 276.2,524.0 302.0,524.0 C327.8,524.0 353.7,455.9 379.5,381.0 C405.3,306.1 431.2,238.0 457.0,238.0 C482.8,238.0 508.7,306.1 534.5,381.0 C560.3,455.9 586.2,524.0 612.0,524.0 C637.8,524.0 663.7,455.9 689.5,381.0" clip-path="url(#arc)" fill="none" stroke="var(--logo-red,#E0434F)" stroke-width="40"/><path d="M369.879588688946 432.7917737789203H380.5901285347044V472.0H275.6268380462725V432.7917737789203H291.69264781491L287.40843187660664 413.66580976863753H250.99259640102827L246.7083804627249 432.7917737789203H262.77419023136247V472.0H171.1990745501285V432.7917737789203H181.90961439588685L227.16164524421592 286.0H324.62755784061693ZM256.88339331619534 388.3239074550129H281.51763496143957L270.5393316195373 340.7480719794345H267.8616966580977ZM385.1585604113111 432.7917737789203H398.546735218509V325.2082262210797H385.1585604113111V286.0H508.0620051413882Q542.6034961439589 286.0 560.8114138817481 298.67095115681235Q579.0193316195373 311.3419023136247 579.0193316195373 339.7917737789203Q579.0193316195373 355.8097686375321 571.7897172236504 367.5244215938303Q564.5601028277636 379.2390745501285 551.1719280205656 383.7814910025707L551.4396915167096 386.172236503856Q577.1449871465296 389.75835475578407 577.1449871465296 414.38303341902315V432.7917737789203H589.7298714652957V472.0H504.8488431876607V415.81748071979433Q504.8488431876607 406.4935732647815 501.76956298200514 401.7120822622108Q498.69028277634965 396.9305912596401 492.13007712082265 395.25706940874034Q485.5698714652957 393.58354755784063 473.52051413881753 393.58354755784063V432.7917737789203H491.1929048843188V472.0H385.1585604113111ZM487.9797429305913 364.41645244215937Q495.74488431876614 364.41645244215937 499.62745501285355 360.71079691516707Q503.51002570694095 357.0051413881748 503.51002570694095 349.1156812339332V340.5089974293059Q503.51002570694095 332.61953727506426 499.62745501285355 328.91388174807196Q495.74488431876614 325.2082262210797 487.9797429305913 325.2082262210797H473.52051413881753V364.41645244215937Z" fill="currentColor"/></svg></div>
+    <div class="count" title="Albums heard"><span class="n" id="cHeard">0</span><span class="of">/ 1001<span class="hm"> heard</span></span></div>
+    <div class="spacer"></div>
+    <button class="next-chip" id="nextChip" type="button" hidden>
+      <span class="ph" id="nextImg"></span>
+      <span class="t"><small>Up next · <span id="nextNum" style="font-variant-numeric:tabular-nums"></span></small><span id="nextTitle"></span></span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg></span>
+    </button>
+    <button class="iconbtn m-only" id="mSearchBtn" type="button" title="Search" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+    <button class="iconbtn m-only" id="filterBtn" type="button" title="Filter" aria-label="Filter" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg><i class="fdot" hidden></i></button>
+    <button class="iconbtn" id="favsBtn" type="button" title="Favourites" aria-label="Favourites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20.3s-7.4-4.5-9.1-9.2C1.7 7.7 3.9 4.6 7.2 4.6c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.3 6.5-1.7 4.7-9.1 9.2-9.1 9.2z"/></svg></button>
+    <button class="iconbtn" id="statsBtn" type="button" title="Stats" aria-label="Stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
+    <button class="iconbtn" id="backupBtn" type="button" title="Sync and backup" aria-label="Sync and backup"><i class="sdot" id="syncDot"></i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg></button>
+  </div>
+  <div class="decades" id="decades"></div>
+  <div class="tools">
+    <button class="iconbtn" id="searchBtn" type="button" title="Search" aria-label="Search" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+    <label class="search" id="searchBox" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="Search artist, title, genre or label" autocomplete="off"></label>
+    <div class="chips" role="group" aria-label="Filter">
+      <button class="chip" data-f="all" aria-pressed="true" type="button">All</button>
+      <button class="chip" data-f="heardNoNotes" aria-pressed="false" type="button">Heard, no notes</button>
+      <button class="chip" data-f="notesNotHeard" aria-pressed="false" type="button">Notes, not heard</button>
+    </div>
+    <label class="zoom" title="Cover size"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg><input id="zoom" type="range" min="44" max="240" step="4" value="96" aria-label="Cover size"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/></svg></label>
+  </div>
+</header>
+<div class="banner" id="banner" hidden><div id="bannerText"></div></div>
+<main id="wall" aria-label="Album wall"><p class="empty-note">Loading the wall…</p></main>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="aTitle">
+  <div class="panel" id="panel">
+    <div class="art" id="art"><div class="loading" id="artBlur"></div><img id="artImg" alt=""></div>
+    <div class="info">
+      <div class="bar">
+        <span class="pos" id="aPos"></span>
+        <button class="iconbtn" id="prevBtn" type="button" aria-label="Previous album"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button class="iconbtn" id="nextBtn" type="button" aria-label="Next album"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="iconbtn" id="closeBtn" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="scroll" id="aScroll">
+        <div class="kicker" id="aKicker"></div>
+        <h1 class="ttl" id="aTitle"></h1>
+        <p class="who" id="aArtist"></p>
+        <div class="actions">
+          <a class="btn play" id="amLink" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span>Play</span></a>
+          <button class="btn toggle-heard" id="heardBtn" type="button" aria-pressed="false"></button>
+          <button class="iconbtn fav-btn" id="favBtn" type="button" aria-pressed="false" title="Add to favourites" aria-label="Favourite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20.3s-7.4-4.5-9.1-9.2C1.7 7.7 3.9 4.6 7.2 4.6c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.3 6.5-1.7 4.7-9.1 9.2-9.1 9.2z"/></svg></button>
+          <span class="brk" aria-hidden="true"></span>
+          <button class="linkish" id="coverBtn" type="button" hidden>Replace cover</button>
+          <button class="linkish" id="coverReset" type="button" hidden>Use original cover</button>
+          <input type="file" id="coverFile" accept="image/*" hidden>
+        </div>
+        <div class="journal">
+          <h3>My notes <span class="save" id="saveState"></span></h3>
+          <div class="row"><label for="dateIn">Listened</label><input type="date" id="dateIn"></div>
+          <div class="headrow" id="headRow" hidden><textarea class="headline" id="headIn" rows="1" placeholder="One-line takeaway" aria-label="One-line takeaway"></textarea></div>
+          <ul class="bullets" id="bullets"></ul>
+          <div class="addrow"><button class="btn ghost addb" id="addBullet" type="button">+ Add a point</button><button class="btn ghost addb" id="addHead" type="button">+ Add a takeaway</button></div>
+          <div class="readonly-note" id="roNote" hidden></div>
+        </div>
+        <dl class="facts" id="aFacts"></dl>
+        <section class="tracks" id="aTracks" hidden></section>
+        <p class="about" id="aAbout"></p>
+        <div class="wmore" id="aMore"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="favpage" id="favPage" hidden role="dialog" aria-modal="true" aria-labelledby="fvT">
+  <div class="fv-top"><h2 id="fvT">Favourites <span id="fvCount"></span></h2><button class="iconbtn" id="fvClose" type="button" aria-label="Close favourites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="fv-list" id="fvList"></div>
+</div>
+<div class="favpage" id="statsPage" hidden role="dialog" aria-modal="true" aria-labelledby="stT">
+  <div class="fv-top"><h2 id="stT">Stats</h2><button class="iconbtn" id="stClose" type="button" aria-label="Close stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="st-list" id="stList"></div>
+</div>
+<div class="modal" id="backupModal" hidden role="dialog" aria-modal="true" aria-labelledby="bkT">
+  <div class="card">
+    <h2 id="bkT">Sync and backup</h2>
+    <p>Your notes are saved on this device and, once sync is on, in <code>notes.json</code> in your private GitHub repository, where every change is kept in its history. You can also save copies anywhere. Every file opens without this app.</p>
+    <div class="list">
+      <div class="opt"><div><b>Sync across devices</b><span id="syncState">Off</span></div><button class="btn" id="syncBtn" type="button">Settings</button></div>
+      <div class="opt"><div><b>Notes backup</b><span>A .json file with every note, date and listened mark. This app can restore from it.</span></div><button class="btn" id="exJson" type="button">Save .json</button></div>
+      <div class="opt"><div><b>Readable journal</b><span>A Markdown file of your notes in book order. Opens in any text editor.</span></div><button class="btn" id="exMd" type="button">Save .md</button></div>
+      <div class="opt"><div><b>Full archive</b><span>A .zip with every cover, all album details, your notes, and an offline page you can open in any browser. About 150 MB.</span></div><button class="btn" id="exZip" type="button">Save .zip</button></div>
+      <div class="opt"><div><b>Restore from a backup</b><span>Load a notes .json saved from this app. It replaces the notes for each album in the file.</span></div><label class="btn" for="imFile">Choose file<input type="file" id="imFile" accept=".json,application/json" hidden></label></div>
+    </div>
+    <p class="hint" id="bkStatus" style="margin-top:14px"></p>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn" data-close type="button">Done</button></div>
+  </div>
+</div>
+<div class="modal" id="syncModal" hidden role="dialog" aria-modal="true" aria-labelledby="syT">
+  <div class="card">
+    <h2 id="syT">Sync settings</h2>
+    <p id="syStatus"></p>
+    <div class="form">
+      <label>GitHub username<input id="syOwner" autocomplete="username" autocapitalize="off" spellcheck="false"></label>
+      <label>Notes repository<input id="syRepo" autocapitalize="off" spellcheck="false" value="auditory-range-data"></label>
+      <label>Access token<input id="syToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    </div>
+    <details class="howto"><summary>How to make an access token</summary>
+      <ol>
+        <li>On github.com, open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Settings → Developer settings → Fine-grained tokens → Generate new token</a>.</li>
+        <li>Name it "Auditory Range" and set the expiration to the longest allowed (or "No expiration").</li>
+        <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick <b>auditory-range-data</b>.</li>
+        <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+        <li>Generate it, copy it, and paste it above. Use the same token on your phone and your PC.</li>
+      </ol>
+      <p class="hint">The token stays on this device and can only touch your notes repository.</p>
+    </details>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" id="syOff" type="button" hidden>Disconnect</button><button class="btn" data-close type="button">Close</button><button class="btn primary" id="syGo" type="button">Connect</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+const pad = n => String(n).padStart(4, '0');
+const todayISO = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const fmtDate = s => { if (!s) return ''; const [y,m,d] = s.split('-').map(Number); return d ? `${MONTHS[m-1]} ${d}, ${y}` : m ? `${MONTHS[m-1]} ${y}` : String(y); };
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+let A = [];             // catalog, index = n-1
+let NOTES = {};         // n -> {heard,date,headline,bullets,updated}
+const canWrite = true; let dbReady = false;
+let current = 0;        // open album n (0 = closed)
+let filter = 'all', query = '';
+const tiles = [];
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+/* ---------- image bundles ---------- */
+const bundleCache = new Map();
+function bundle(kind, i) {
+  const key = kind + i;
+  if (!bundleCache.has(key)) {
+    const p = fetch(`${kind}/${String(i).padStart(3,'0')}.wasm`).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+    p.catch(() => bundleCache.delete(key));
+    bundleCache.set(key, p);
+  }
+  return bundleCache.get(key);
+}
+const urlCache = new Map();
+const COVER_EXT = {};
+let COVERS = {};        // n -> path of a cover you replaced, in the notes repository
+const coverBlobs = new Map();
+async function customCover(n) {
+  const path = COVERS[n]; if (!path) return null;
+  if (coverBlobs.has(path)) return coverBlobs.get(path);
+  const p = (async () => {
+    let cache = null; try { cache = await caches.open('ar-covers'); const hit = await cache.match('/_cover/' + path); if (hit) return await hit.blob(); } catch {}
+    if (!syncCfg) return null;
+    const r = await gh('contents/' + path.split('/').map(encodeURIComponent).join('/'), { headers: { Accept: 'application/vnd.github.raw+json' } });
+    if (!r.ok) return null;
+    const b = await r.blob(); try { cache && await cache.put('/_cover/' + path, new Response(b, { headers: { 'Content-Type': b.type || 'image/jpeg' } })); } catch {}
+    return b;
+  })();
+  p.then(b => { if (!b) coverBlobs.delete(path); }); coverBlobs.set(path, p); return p;
+}
+async function imageURL(a, kind) {
+  if (COVERS[a.n]) { const key = 'x' + COVERS[a.n]; if (urlCache.has(key)) return urlCache.get(key); const b = await customCover(a.n); if (b) { const u = URL.createObjectURL(b); urlCache.set(key, u); return u; } }
+  const ref = kind === 't' ? a.t : a.c; if (!ref) return null;
+  const key = kind + a.n; if (urlCache.has(key)) return urlCache.get(key);
+  const buf = await bundle(kind, ref[0]);
+  const url = URL.createObjectURL(new Blob([buf.slice(ref[1], ref[1] + ref[2])], { type: 'image/webp' }));
+  urlCache.set(key, url); return url;
+}
+async function imageBlob(a, kind) {
+  if (COVERS[a.n]) { const b = await customCover(a.n); if (b) return { u8: new Uint8Array(await b.arrayBuffer()), ext: COVERS[a.n].split('.').pop() }; }
+  const ref = kind === 't' ? a.t : a.c; if (!ref) return null;
+  const buf = await bundle(kind, ref[0]);
+  return { u8: new Uint8Array(buf, ref[1], ref[2]), ext: 'webp' };
+}
+
+/* ---------- wall ---------- */
+function sectionYears() {
+  // Book order is roughly chronological; keep sections contiguous and label each by the book's year.
+  const out = []; let cur = null;
+  for (const a of A) {
+    if (!cur || cur.year !== a.sy) { cur = { year: a.sy, items: [] }; out.push(cur); }
+    cur.items.push(a);
+  }
+  return out;
+}
+function buildWall() {
+  const wall = $('#wall'); wall.textContent = '';
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) if (e.isIntersecting) { io.unobserve(e.target); loadThumb(e.target); }
+  }, { rootMargin: '600px 0px' });
+  for (const sec of sectionYears()) {
+    const s = el('section', 'year'); s.id = 'y' + sec.year + '-' + sec.items[0].n;
+    const h = el('h2'); h.append(String(sec.year)); const sm = el('small', 'mono', `${sec.items[0].n}–${sec.items[sec.items.length-1].n}`); h.append(sm);
+    const g = el('div', 'grid');
+    for (const a of sec.items) {
+      const b = el('button', 'tile'); b.type = 'button'; b.dataset.n = a.n;
+      b.style.setProperty('--c', a.col || '');
+      b.setAttribute('aria-label', `${a.n}. ${a.artist}, ${a.title}`);
+      const img = el('img'); img.alt = ''; img.decoding = 'async'; b.append(img);
+      b.append(el('span', 'num', a.n));
+      g.append(b); tiles[a.n] = b; io.observe(b);
+    }
+    s.append(h, g); wall.append(s);
+  }
+  wall.addEventListener('click', e => { const t = e.target.closest('.tile'); if (t) openAlbum(+t.dataset.n); });
+}
+async function loadThumb(b) {
+  const a = A[b.dataset.n - 1]; const img = b.firstChild;
+  try { const u = await imageURL(a, 't'); if (u) { img.src = u; img.onload = () => img.classList.add('on'); } } catch {}
+}
+function hasNotes(n) { const x = NOTES[n]; return !!(x && ((x.bullets && x.bullets.some(s => s.trim())) || (x.headline && x.headline.trim()))); }
+function isHeard(n) { return !!(NOTES[n] && NOTES[n].heard); }
+function isFav(n) { return !!(NOTES[n] && NOTES[n].fav); }
+const STAR_SVG = '<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M12 20.3s-7.4-4.5-9.1-9.2C1.7 7.7 3.9 4.6 7.2 4.6c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.3 6.5-1.7 4.7-9.1 9.2-9.1 9.2z"/></svg>';
+function nextUp() { for (const a of A) if (!(isHeard(a.n) && hasNotes(a.n))) return a.n; return 0; }
+let lastNext = 0;
+function paintTiles() {
+  const nx = nextUp();
+  for (const a of A) {
+    const t = tiles[a.n]; if (!t) continue;
+    t.classList.toggle('heard', isHeard(a.n));
+    t.classList.toggle('next', a.n === nx);
+    const fav = isFav(a.n); let fv = t.querySelector('.fv');
+    if (fav && !fv) { fv = el('span', 'fv'); fv.innerHTML = STAR_SVG; t.append(fv); } else if (!fav && fv) fv.remove();
+    const y = isHeard(a.n) && NOTES[a.n].date ? NOTES[a.n].date.slice(0, 4) : '';
+    let yr = t.querySelector('.yr');
+    if (y) { if (!yr) { yr = el('span', 'yr'); t.append(yr); } yr.textContent = 'Heard ' + y; } else if (yr) yr.remove();
+    t.title = `${a.n}. ${a.artist} — ${a.title}` + (isHeard(a.n) ? (y ? ` · heard in ${y}` : ' · heard') : '');
+  }
+  applyFilter(); paintHeader(nx);
+  if (!$('#favPage').hidden && $('#sheet').hidden) openFavs();
+  lastNext = nx;
+}
+function paintHeader(nx) {
+  const heard = A.filter(a => isHeard(a.n)).length;
+  $('#cHeard').textContent = heard;
+  const chip = $('#nextChip');
+  if (nx) {
+    const a = A[nx - 1]; chip.hidden = false;
+    $('#nextNum').textContent = 'No. ' + nx; $('#nextTitle').innerHTML = `<b>${esc(a.title)}</b><i> · ${esc(a.artist)}</i>`;
+    imageURL(a, 't').then(u => { if (!u) return; const old = $('#nextImg'); const i = el('img'); i.id = 'nextImg'; i.alt = ''; i.src = u; old.replaceWith(i); }).catch(() => {});
+  } else chip.hidden = true;
+  // decades
+  const box = $('#decades'); box.textContent = '';
+  const decs = {}; for (const a of A) { const d = Math.floor(a.sy / 10) * 10; (decs[d] ||= { tot: 0, h: 0, first: a.n }); decs[d].tot++; if (isHeard(a.n)) decs[d].h++; }
+  for (const [d, v] of Object.entries(decs)) {
+    const b = el('button', 'dec'); b.type = 'button'; b.style.setProperty('--w', v.tot); b.title = `${d}s: ${v.h} of ${v.tot} heard`;
+    const bar = el('div', 'dbar'); const i = el('i'); i.style.width = (v.h / v.tot * 100) + '%'; bar.append(i);
+    const lb = el('div', 'lb'); lb.append(el('span', '', `’${String(d).slice(2)}s`), el('em', '', `${v.h}/${v.tot}`));
+    b.append(bar, lb); b.onclick = () => jumpTo(v.first); box.append(b);
+  }
+}
+function jumpTo(n) { const t = tiles[n]; if (!t) return; t.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); t.focus({ preventScroll: true }); }
+function applyFilter() {
+  const q = query.trim().toLowerCase();
+  for (const a of A) {
+    const t = tiles[a.n]; if (!t) continue;
+    let ok = true;
+    if (filter === 'heardNoNotes') ok = isHeard(a.n) && !hasNotes(a.n); else if (filter === 'notesNotHeard') ok = hasNotes(a.n) && !isHeard(a.n);
+    if (ok && q) ok = a._s.includes(q) || String(a.n) === q;
+    t.classList.toggle('miss', !ok);
+  }
+  let shown = 0;
+  document.querySelectorAll('#wall .year').forEach(sec => {
+    const any = sec.querySelector('.tile:not(.miss)'); sec.hidden = !any; if (any) shown++;
+  });
+  let nm = document.getElementById('noMatch');
+  if (!shown) {
+    if (!nm) { nm = el('p', 'no-match'); nm.id = 'noMatch'; $('#wall').append(nm); }
+    nm.textContent = q ? 'No albums match that search.' : filter === 'heardNoNotes' ? 'Every album you have heard has notes.' : 'No albums have notes without being marked heard.';
+    nm.hidden = false;
+  } else if (nm) nm.hidden = true;
+}
+
+/* ---------- album sheet ---------- */
+let saveTimer = null, dirty = false, writing = Promise.resolve();
+function openAlbum(n, push = true) {
+  if (!n || n < 1 || n > A.length) return;
+  flushSave();
+  current = n; const a = A[n - 1];
+  const sh = $('#sheet'); sh.hidden = false; document.body.style.overflow = 'hidden';
+  $('#art').style.setProperty('--c', a.col || '#111');
+  const img = $('#artImg'); img.removeAttribute('src'); img.alt = `Cover of ${a.title} by ${a.artist}`;
+  const blur = $('#artBlur'); blur.style.backgroundImage = ''; blur.hidden = false;
+  imageURL(a, 't').then(u => { if (u && current === n) blur.style.backgroundImage = `url(${u})`; }).catch(() => {});
+  imageURL(a, 'c').then(u => { if (u && current === n) { img.src = u; img.onload = () => { if (current === n) blur.hidden = true; }; } }).catch(() => {});
+  $('#aPos').textContent = `No. ${n} of ${A.length}`;
+  $('#aKicker').textContent = fmtDate(a.date);
+  $('#aTitle').textContent = a.title; $('#aArtist').textContent = a.artist;
+  const am = $('#amLink');
+  am.href = a.am ? `https://music.apple.com/album/${a.am}` : `https://music.apple.com/search?term=${encodeURIComponent(a.artist + ' ' + a.title)}`;
+  am.title = a.am ? 'Play on Apple Music' : 'Search for it on Apple Music';
+  const f = $('#aFacts'); f.textContent = '';
+  const facts = [['Released', fmtDate(a.date) + (a.relNote ? ` (${a.relNote})` : '')], ['Label', a.label], ['Genre', a.genre], ['Length', a.length], ['Producer', a.producer], ['Recorded', a.recorded], ['Studio', a.studio]];
+  for (const [k, v] of facts) if (v) { f.append(el('dt', '', k), el('dd', '', v)); }
+  $('#aAbout').textContent = a.about || '';
+  renderExtras(a);
+  paintCoverButtons();
+  renderNoteEditor();
+  $('#aScroll').scrollTop = 0; $('#panel').scrollTop = 0;
+  if (push) { try { history.replaceState(null, '', '#a' + n); } catch {} }
+  $('#closeBtn').focus({ preventScroll: true });
+  // warm neighbours
+  for (const m of [n + 1, n - 1]) if (A[m - 1]) imageURL(A[m - 1], 'c').catch(() => {});
+}
+function closeAlbum() {
+  flushSave(); current = 0; $('#sheet').hidden = true; document.body.style.overflow = ($('#favPage').hidden && $('#statsPage').hidden) ? '' : 'hidden';
+  if (!$('#favPage').hidden) openFavs();
+  try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+}
+function note(n) { return NOTES[n] || { heard: false, date: '', headline: '', bullets: [] }; }
+let editing = null; // working copy for current album
+function renderNoteEditor() {
+  const x = note(current);
+  editing = { heard: !!x.heard, fav: !!x.fav, date: x.date || '', headline: x.headline || '', bullets: (x.bullets && x.bullets.length ? [...x.bullets] : ['']) };
+  dirty = false; setSaveState('');
+  paintHeardBtn(); paintFavBtn();
+  $('#dateIn').value = editing.date;
+  const h = $('#headIn'); h.value = editing.headline; showHead(!!editing.headline.trim()); autosize(h);
+  drawBullets();
+  const ro = !canWrite; for (const e of document.querySelectorAll('#dateIn,#headIn,#addBullet,#addHead,#heardBtn,#favBtn')) e.disabled = ro;
+  $('#roNote').hidden = true;
+}
+function showHead(on) { $('#headRow').hidden = !on; $('#addHead').hidden = on; }
+function paintFavBtn() { const b = $('#favBtn'); b.setAttribute('aria-pressed', editing.fav); b.title = editing.fav ? 'Remove from favourites' : 'Add to favourites'; }
+function paintHeardBtn() { const b = $('#heardBtn'); b.setAttribute('aria-pressed', editing.heard); b.textContent = editing.heard ? '✓ Heard' : 'Mark as heard'; }
+function drawBullets(focusIdx, caretEnd) {
+  const ul = $('#bullets'); ul.textContent = '';
+  editing.bullets.forEach((txt, i) => {
+    const li = el('li'); const ta = el('textarea'); ta.rows = 1; ta.value = txt; ta.id = 'b' + i; ta.placeholder = i === 0 ? 'A thought about this album' : ''; ta.disabled = !canWrite;
+    ta.setAttribute('aria-label', `Point ${i + 1}`);
+    ta.addEventListener('input', () => { editing.bullets[i] = ta.value; autosize(ta); changed(); });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const pos = ta.selectionStart; const before = ta.value.slice(0, pos), after = ta.value.slice(pos); editing.bullets[i] = before; editing.bullets.splice(i + 1, 0, after); changed(); drawBullets(i + 1, false); }
+      else if (e.key === 'Backspace' && ta.selectionStart === 0 && ta.selectionEnd === 0 && i > 0) { e.preventDefault(); const prev = editing.bullets[i - 1]; editing.bullets[i - 1] = prev + ta.value; editing.bullets.splice(i, 1); changed(); drawBullets(i - 1, prev.length); }
+    });
+    const x = el('button', 'x', '×'); x.type = 'button'; x.setAttribute('aria-label', `Remove point ${i + 1}`); x.disabled = !canWrite;
+    x.onclick = () => { editing.bullets.splice(i, 1); if (!editing.bullets.length) editing.bullets.push(''); changed(); drawBullets(Math.max(0, i - 1), true); };
+    li.append(ta, x); ul.append(li);
+  });
+  requestAnimationFrame(() => {
+    ul.querySelectorAll('textarea').forEach(autosize);
+    if (focusIdx != null) { const t = $('#b' + focusIdx); if (t) { t.focus(); const p = caretEnd === false ? 0 : (typeof caretEnd === 'number' ? caretEnd : t.value.length); t.setSelectionRange(p, p); } }
+  });
+}
+function autosize(t) { if (!t.isConnected || !t.offsetWidth) return; t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+function autosizeAll() { document.querySelectorAll('#bullets textarea, #headIn').forEach(autosize); }
+if (window.ResizeObserver) new ResizeObserver(() => autosizeAll()).observe(document.getElementById('aScroll'));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(autosizeAll);
+function setSaveState(s) { $('#saveState').textContent = s; }
+function changed() {
+  if (!canWrite) return;
+  dirty = true; setSaveState('Saving…');
+  clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 700);
+}
+function flushSave() {
+  clearTimeout(saveTimer);
+  if (!dirty || !current) return;
+  dirty = false;
+  const n = current;
+  const body = { n, heard: !!editing.heard, fav: !!editing.fav, date: editing.date || '', headline: editing.headline.trim() ? editing.headline : '', bullets: editing.bullets.filter(b => b.trim()), updated: new Date().toISOString() };
+  NOTES[n] = body; paintTiles();
+  markChanged(n); setSaveState(syncCfg ? 'Saved' : 'Saved on this device');
+}
+$('#heardBtn').onclick = () => { editing.heard = !editing.heard; if (editing.heard && !editing.date) { editing.date = todayISO(); $('#dateIn').value = editing.date; } paintHeardBtn(); dirty = true; setSaveState('Saving…'); flushSave(); };
+$('#favBtn').onclick = () => { editing.fav = !editing.fav; paintFavBtn(); dirty = true; setSaveState('Saving…'); flushSave(); toast(editing.fav ? 'Added to favourites.' : 'Removed from favourites.'); };
+$('#addHead').onclick = () => { showHead(true); const h = $('#headIn'); autosize(h); h.focus(); };
+$('#headIn').addEventListener('blur', e => { if (!e.target.value.trim()) showHead(false); });
+$('#dateIn').onchange = e => { editing.date = e.target.value; changed(); };
+$('#headIn').addEventListener('input', e => { editing.headline = e.target.value.replace(/\n/g, ' '); autosize(e.target); changed(); });
+$('#headIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const t = $('#b0'); if (t) t.focus(); } else if (e.key === 'Backspace' && !e.target.value) { e.preventDefault(); showHead(false); const t = $('#b0'); if (t) t.focus(); } });
+$('#addBullet').onclick = () => { const i = editing.bullets.length; if (editing.bullets[i - 1] === '') { $('#b' + (i - 1)).focus(); return; } editing.bullets.push(''); drawBullets(i); };
+$('#closeBtn').onclick = closeAlbum;
+$('#prevBtn').onclick = () => openAlbum(current - 1);
+$('#nextBtn').onclick = () => openAlbum(current + 1);
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeAlbum(); });
+document.addEventListener('keydown', e => {
+  if (!$('#sheet').hidden) {
+    const typing = /TEXTAREA|INPUT/.test(document.activeElement.tagName);
+    if (e.key === 'Escape') { if (typing) document.activeElement.blur(); else closeAlbum(); }
+    else if (!typing && e.key === 'ArrowRight') openAlbum(current + 1);
+    else if (!typing && e.key === 'ArrowLeft') openAlbum(current - 1);
+  } else if (e.key === 'Escape') { const m = [...document.querySelectorAll('.modal')].filter(m => !m.hidden); if (m.length) m.forEach(m => m.hidden = true); else if (!$('#statsPage').hidden) closeStats(); else if (!$('#favPage').hidden) closeFavs(); }
+  else if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); openSearch(); }
+});
+// swipe between albums on touch screens
+(() => {
+  let x0 = null, y0 = 0, t0 = 0;
+  const p = $('#panel');
+  p.addEventListener('touchstart', e => { if (/TEXTAREA|INPUT/.test(e.target.tagName)) { x0 = null; return; } const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); }, { passive: true });
+  p.addEventListener('touchend', e => { if (x0 == null) return; const t = e.changedTouches[0]; const dx = t.clientX - x0, dy = t.clientY - y0; x0 = null; if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6 && Date.now() - t0 < 600) openAlbum(current + (dx < 0 ? 1 : -1)); }, { passive: true });
+})();
+
+/* ---------- header controls ---------- */
+$('#nextChip').onclick = () => { const n = nextUp(); if (!n) return; if (filter !== 'all' || query) { filter = 'all'; query = ''; $('#q').value = ''; closeSearch(false); document.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'all')); paintFilterDot(); applyFilter(); } centerOn(n, true); tiles[n].focus({ preventScroll: true }); };
+$('#q').addEventListener('input', e => { query = e.target.value; applyFilter(); });
+function openSearch() { $('#searchBox').hidden = false; $('.tools').classList.add('searching'); $('#searchBtn').setAttribute('aria-expanded', 'true'); $('#q').focus(); measureTop(); }
+function closeSearch(clear) { if (clear) { $('#q').value = ''; query = ''; applyFilter(); } if ($('#q').value) return; $('#searchBox').hidden = true; $('.tools').classList.remove('searching'); $('#searchBtn').setAttribute('aria-expanded', 'false'); measureTop(); }
+$('#searchBtn').onclick = openSearch;
+$('#q').addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $('#q')) closeSearch(false); }, 150));
+$('#q').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSearch(true); $('#q').blur(); } });
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => { filter = c.dataset.f; document.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c)); applyFilter(); store.set('f', filter); paintFilterDot(); if ($('.tools').classList.contains('filtering')) toggleFilters(false); });
+function paintFilterDot() { $('#filterBtn .fdot').hidden = filter === 'all'; }
+function toggleFilters(open) { const t = $('.tools'); open = open ?? !t.classList.contains('filtering'); if (open) closeSearch(true); t.classList.toggle('filtering', open); $('#filterBtn').setAttribute('aria-expanded', String(open)); measureTop(); }
+$('#filterBtn').onclick = () => toggleFilters();
+$('#mSearchBtn').onclick = () => { if ($('.tools').classList.contains('searching')) closeSearch(true); else { toggleFilters(false); openSearch(); } };
+const zoom = $('#zoom');
+function setZoom(v) { document.documentElement.style.setProperty('--tile', v + 'px'); document.body.classList.toggle('big', v >= 150); store.set('z', v); }
+zoom.addEventListener('input', () => setZoom(+zoom.value));
+function placeNext() {
+  const chip = $('#nextChip'), mobile = innerWidth <= 640;
+  if (mobile && chip.parentElement.id !== 'top') $('#decades').after(chip);
+  else if (!mobile && chip.parentElement.id === 'top') $('#mSearchBtn').before(chip);
+}
+placeNext(); addEventListener('resize', () => { placeNext(); measureTop(); });
+function setCols() { const w = innerWidth; document.documentElement.style.setProperty('--cols', w < 380 ? 3 : w < 520 ? 4 : 5); }
+addEventListener('resize', () => { setCols(); measureTop(); });
+function measureTop() { document.documentElement.style.setProperty('--toph', $('#top').offsetHeight + 'px'); }
+for (const id of ['backupModal']) $('#' + id).addEventListener('click', e => { if (e.target.id === id || e.target.closest('[data-close]')) $('#' + id).hidden = true; });
+
+/* ---------- wikipedia extras: track listing + longer sections ---------- */
+const extraCache = new Map();
+function extras(n) {
+  const bi = Math.floor((n - 1) / 50);
+  if (!extraCache.has(bi)) { const p = fetch(`w/${String(bi).padStart(3, '0')}.json`).then(r => r.ok ? r.json() : {}); p.catch(() => extraCache.delete(bi)); extraCache.set(bi, p); }
+  return extraCache.get(bi).then(d => d[n] || null);
+}
+function renderExtras(a) {
+  const tb = $('#aTracks'), mb = $('#aMore'); tb.hidden = true; tb.textContent = ''; mb.textContent = '';
+  extras(a.n).then(x => {
+    if (current !== a.n || !x) return;
+    if (x.tr && x.tr.length) {
+      tb.append(el('h3', '', 'Track listing'));
+      const multi = x.tr.length > 1;
+      for (const g of x.tr) {
+        if (g.h && (multi || !/^track listing$/i.test(g.h))) tb.append(el('h4', '', g.h));
+        const ol = el('ol');
+        for (const [num, title, len, nt] of g.t) {
+          const li = el('li'); const nm = el('span', '', title); if (nt) nm.append(el('small', '', nt));
+          li.append(el('span', 'i', String(num)), nm, el('span', 'd', len || ''));
+          ol.append(li);
+        }
+        tb.append(ol);
+      }
+      if (x.tot) tb.append(el('p', 'tot', `Total length ${x.tot}`));
+      tb.hidden = false;
+    }
+    if (x.sec && x.sec.length) {
+      for (const [h, txt, open] of x.sec) {
+        const d = el('details');
+        d.append(el('summary', '', h));
+        for (const para of txt.split('\n')) if (para.trim()) d.append(el('p', '', para));
+        mb.append(d);
+      }
+    }
+    if (a.wiki) { const s = el('p', 'src'); s.append('From Wikipedia, under CC BY-SA. '); const l = el('a', '', 'Read the full article'); l.href = a.wiki; l.target = '_blank'; l.rel = 'noopener'; s.append(l); mb.append(s); }
+  }).catch(() => {});
+}
+
+/* ---------- favourites page ---------- */
+function openFavs() {
+  const list = $('#fvList'); list.textContent = '';
+  const favs = A.filter(a => isFav(a.n));
+  $('#fvCount').textContent = favs.length ? favs.length : '';
+  if (!favs.length) list.append(el('p', 'fv-empty', 'No favourites yet. Open an album and tap the heart to add it here.'));
+  for (const a of favs) {
+    const x = NOTES[a.n] || {};
+    const b = el('button', 'fv-card'); b.type = 'button'; b.style.setProperty('--c', a.col || '');
+    const ph = el('span', 'ph'); b.append(ph);
+    imageURL(a, 't').then(u => { if (!u) return; const i = el('img'); i.alt = ''; i.src = u; ph.replaceWith(i); }).catch(() => {});
+    const t = el('div');
+    t.append(el('div', 'k', `No. ${a.n} · ${a.sy}${x.date ? ' · heard ' + fmtDate(x.date) : ''}`), el('b', '', a.title), el('div', 'a', a.artist));
+    if (x.headline) t.append(el('div', 'h', x.headline));
+    b.append(t); b.onclick = () => openAlbum(a.n);
+    list.append(b);
+  }
+  $('#favPage').hidden = false; document.body.style.overflow = 'hidden'; $('#fvClose').focus({ preventScroll: true });
+}
+function closeFavs() { $('#favPage').hidden = true; if ($('#sheet').hidden) document.body.style.overflow = ''; }
+$('#favsBtn').onclick = openFavs;
+$('#fvClose').onclick = closeFavs;
+
+/* ---------- stats page ---------- */
+const lenMin = s => { if (!s) return 0; const p = s.split(':').map(Number); return p.length === 3 ? p[0] * 60 + p[1] + p[2] / 60 : p[0] + p[1] / 60; };
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgEl = (t, at) => { const e = document.createElementNS(SVGNS, t); for (const k in at) e.setAttribute(k, at[k]); return e; };
+const isoDay = d => new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const fmtHours = h => h >= 10 ? Math.round(h).toLocaleString() : h.toFixed(1);
+let calYear = 0;
+function statSection(root, title, sub) {
+  const s = el('section', 'st-sec'); const h = el('h3', '', title); s.append(h);
+  if (sub) s.append(el('p', 'st-sub', sub));
+  root.append(s); return s;
+}
+function albumRow(a, meta) {
+  const x = NOTES[a.n] || {};
+  const b = el('button', 'st-alb'); b.type = 'button'; b.style.setProperty('--c', a.col || '');
+  const ph = el('span', 'ph'); b.append(ph);
+  imageURL(a, 't').then(u => { if (!u) return; const i = el('img'); i.alt = ''; i.src = u; ph.replaceWith(i); }).catch(() => {});
+  const t = el('div'); t.append(el('div', 'k', meta), el('b', '', a.title), el('div', 'a', a.artist));
+  const line = x.headline || (x.bullets || []).find(s => s.trim());
+  if (line) t.append(el('div', 'q', line.length > 160 ? line.slice(0, 157).trim() + '…' : line));
+  b.append(t); b.onclick = () => openAlbum(a.n); return b;
+}
+function openStats() {
+  const root = $('#stList'); root.textContent = '';
+  $('#statsPage').hidden = false; document.body.style.overflow = 'hidden';
+  const heard = A.filter(a => isHeard(a.n));
+  const dated = heard.filter(a => /^\d{4}-\d\d-\d\d/.test(NOTES[a.n].date || '')).map(a => ({ a, d: NOTES[a.n].date.slice(0, 10) })).sort((p, q) => p.d < q.d ? -1 : p.d > q.d ? 1 : p.a.n - q.a.n);
+  const withNotes = A.filter(a => hasNotes(a.n)).length;
+  const favs = A.filter(a => isFav(a.n)).length;
+  const hHeard = heard.reduce((s, a) => s + lenMin(a.length), 0) / 60;
+  const hAll = A.reduce((s, a) => s + lenMin(a.length), 0) / 60;
+
+  // hero
+  const hero = el('div', 'st-hero');
+  for (const [v, l] of [[`${heard.length}`, `of ${A.length} heard`], [fmtHours(hHeard), 'hours of music'], [dated.length ? dated[0].d.slice(0, 4) : '—', 'listening since']]) { const s = el('div', 'st-big'); s.append(el('b', '', v), el('span', '', l)); hero.append(s); }
+  root.append(hero);
+
+  // on this day
+  {
+    const today = todayISO(), md = today.slice(5);
+    let hits = dated.filter(x => x.d.slice(5) === md && x.d < today);
+    let label = 'On this day';
+    if (!hits.length) {
+      const near = x => { const [y] = x.d.split('-'); const a = new Date(today.slice(0, 4) + x.d.slice(4)); const b = new Date(today); return Math.abs((a - b) / 864e5) <= 3 && x.d.slice(0, 4) < today.slice(0, 4); };
+      hits = dated.filter(near); label = 'This week, in years past';
+    }
+    const s = statSection(root, label, hits.length ? null : 'Nothing heard around this date in earlier years yet. Come back tomorrow.');
+    const list = el('div', 'st-albs');
+    for (const x of hits.slice().sort((p, q) => q.d.localeCompare(p.d))) { const yrs = +today.slice(0, 4) - +x.d.slice(0, 4); list.append(albumRow(x.a, `${fmtDate(x.d)} · ${yrs} year${yrs === 1 ? '' : 's'} ago`)); }
+    if (hits.length) s.append(list);
+  }
+
+  // hours
+  {
+    const s = statSection(root, 'Hours of music');
+    const days = hHeard / 24;
+    const w = el('div', 'st-hours');
+    const big = el('div', 'st-hnum'); big.append(el('b', '', fmtHours(hHeard)), el('span', '', `of ${fmtHours(hAll)} hours`)); w.append(big);
+    const bar = el('div', 'st-hbar'); const fill = el('i'); fill.style.width = (hHeard / hAll * 100) + '%'; bar.append(fill); w.append(bar);
+    const left = hAll - hHeard;
+    const facts = el('ul', 'st-facts');
+    const nonstop = `${Math.floor(days)} days and ${Math.round((days % 1) * 24)} hours`;
+    for (const t of [
+      `That's ${nonstop} of non-stop listening.`,
+      `Like flying Toronto to Vancouver ${Math.round(hHeard / 4.75)} times with your headphones on.`,
+      `${fmtHours(left)} hours to go. At one album a day, you'd be done in about ${Math.max(1, Math.round((A.length - heard.length) / 30.4))} months.`,
+      heard.length ? `Your average album runs ${Math.round(hHeard * 60 / heard.filter(a => a.length).length)} minutes. The longest you've heard is ${(() => { const L = heard.filter(a => a.length).sort((p, q) => lenMin(q.length) - lenMin(p.length))[0]; return L ? `${L.title} (${L.length})` : '—'; })()}.` : ''
+    ].filter(Boolean)) facts.append(el('li', '', t));
+    w.append(facts); s.append(w);
+  }
+
+  // journey line
+  if (dated.length > 1) {
+    const s = statSection(root, 'The journey');
+    const t0 = new Date(dated[0].d).getTime(), now = Date.now();
+    const yearAgo = isoDay(new Date(now - 365 * 864e5));
+    const recent = dated.filter(x => x.d >= yearAgo).length;
+    const remaining = A.length - heard.length;
+    let tEnd = now, finish = null;
+    if (recent > 0 && remaining > 0) { finish = new Date(now + remaining / recent * 365 * 864e5); }
+    const projEnd = finish ? Math.min(finish.getTime(), now + (now - t0) * 0.22) : now;
+    tEnd = Math.max(now, projEnd);
+    const W = Math.max(320, Math.min(840, root.clientWidth - 18)), H = W < 500 ? 230 : 270, L = 38, R = 12, T = 14, B = 26;
+    const x = t => L + (t - t0) / (tEnd - t0) * (W - L - R), y = v => T + (1 - v / A.length) * (H - T - B);
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'st-journey', role: 'img', 'aria-label': `Albums heard over time: ${heard.length} of ${A.length}` });
+    for (const v of [0, 250, 500, 750, 1001]) { svg.append(svgEl('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'gl' })); const tx = svgEl('text', { x: L - 6, y: y(v) + 4, class: 'ax', 'text-anchor': 'end' }); tx.textContent = v; svg.append(tx); }
+    const y0 = new Date(t0).getFullYear(), y1 = new Date(tEnd).getFullYear(), step = Math.max(1, Math.ceil((y1 - y0) / 8));
+    for (let yr = y0 + 1; yr <= y1; yr += step) { const tx = svgEl('text', { x: x(new Date(yr, 0, 1).getTime()), y: H - 8, class: 'ax', 'text-anchor': 'middle' }); tx.textContent = yr; svg.append(tx); }
+    let dpath = `M${x(t0)},${y(0)}`, cnt = 0; const pts = [];
+    for (const p of dated) { const t = new Date(p.d).getTime(); dpath += `L${x(t)},${y(cnt)}`; cnt++; dpath += `L${x(t)},${y(cnt)}`; pts.push({ t, c: cnt, p }); }
+    dpath += `L${x(now)},${y(cnt)}`;
+    svg.append(svgEl('path', { d: dpath + `L${x(now)},${y(0)}Z`, class: 'area' }));
+    svg.append(svgEl('path', { d: dpath, class: 'ln' }));
+    if (finish) svg.append(svgEl('path', { d: `M${x(now)},${y(heard.length)}L${x(projEnd)},${y(Math.min(A.length, heard.length + (projEnd - now) / 864e5 / 365 * recent))}`, class: 'proj' }));
+    svg.append(svgEl('circle', { cx: x(now), cy: y(heard.length), r: 4.5, class: 'dot' }));
+    const hov = svgEl('g', { class: 'hov' }); const hl = svgEl('line', { y1: T, y2: H - B }); const hc = svgEl('circle', { r: 4 }); hov.append(hl, hc); svg.append(hov);
+    const wrap = el('div', 'st-jwrap'); wrap.append(svg); const tip = el('div', 'st-tip'); tip.hidden = true; wrap.append(tip); s.append(wrap);
+    const move = ev => {
+      const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) / r.width * W;
+      const t = t0 + (px - L) / (W - L - R) * (tEnd - t0);
+      let best = pts[0]; for (const q of pts) if (q.t <= t) best = q; else break;
+      if (t > now) { hov.style.display = 'none'; tip.hidden = true; return; }
+      hov.style.display = ''; hl.setAttribute('x1', x(best.t)); hl.setAttribute('x2', x(best.t)); hc.setAttribute('cx', x(best.t)); hc.setAttribute('cy', y(best.c));
+      tip.hidden = false; tip.textContent = ''; tip.append(el('b', '', `${best.c} heard`), el('span', '', ` · ${fmtDate(best.p.d)} · ${best.p.a.title}`));
+      tip.style.left = Math.min(r.width - 10, Math.max(10, x(best.t) / W * r.width)) + 'px';
+    };
+    svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+    svg.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.hidden = true; }); hov.style.display = 'none';
+    const cap = el('p', 'st-sub');
+    cap.textContent = finish ? `${recent} album${recent === 1 ? '' : 's'} in the last 12 months. At that pace you'd reach 1001 in ${finish.getFullYear() > new Date().getFullYear() + 40 ? 'more than 40 years' : finish.getFullYear()}. Pick up the pace and the dashed line gets shorter.` : remaining ? 'No albums in the last 12 months, so there is no pace to project yet.' : 'All 1001 heard.';
+    s.append(cap);
+  }
+
+  // listening calendar
+  if (dated.length) {
+    const s = statSection(root, 'Listening calendar');
+    const byDay = {}; for (const x of dated) (byDay[x.d] ||= []).push(x.a);
+    const years = [...new Set(dated.map(x => +x.d.slice(0, 4)))];
+    const yc = {}; for (const x of dated) yc[x.d.slice(0, 4)] = (yc[x.d.slice(0, 4)] || 0) + 1;
+    if (!years.includes(calYear)) calYear = years[years.length - 1];
+    const tabs = el('div', 'st-years');
+    const fy = years[0], ly = new Date().getFullYear();
+    for (let yr = fy; yr <= ly; yr++) { const b = el('button', 'chip'); b.type = 'button'; b.append(String(yr), el('small', '', ' ' + (yc[yr] || 0))); b.setAttribute('aria-pressed', yr === calYear); b.disabled = !yc[yr]; b.onclick = () => { calYear = yr; drawCal(); tabs.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b)); }; tabs.append(b); }
+    s.append(tabs);
+    requestAnimationFrame(() => { const c = tabs.querySelector('[aria-pressed="true"]'); if (c) tabs.scrollLeft = c.offsetLeft - tabs.clientWidth + c.offsetWidth + 8; });
+    const cal = el('div', 'st-cal'); const day = el('div', 'st-day'); s.append(cal, day);
+    const drawCal = () => {
+      cal.textContent = ''; day.textContent = '';
+      const jan1 = new Date(calYear, 0, 1), off = (jan1.getDay() + 6) % 7; // Monday-first
+      const nd = (new Date(calYear + 1, 0, 1) - jan1) / 864e5;
+      const weeks = Math.ceil((nd + off) / 7);
+      const cell = 11, gap = 2, Lm = 22, Tm = 16;
+      const svg = svgEl('svg', { viewBox: `0 0 ${Lm + weeks * (cell + gap)} ${Tm + 7 * (cell + gap)}`, class: 'st-calsvg', role: 'img', 'aria-label': `Listening calendar ${calYear}: ${yc[calYear] || 0} albums` });
+      ['M', '', 'W', '', 'F', '', ''].forEach((t, i) => { if (!t) return; const tx = svgEl('text', { x: 0, y: Tm + i * (cell + gap) + 9, class: 'ax' }); tx.textContent = t; svg.append(tx); });
+      let lastM = -1;
+      for (let i = 0; i < nd; i++) {
+        const d = new Date(calYear, 0, 1 + i); const k = i + off; const wk = Math.floor(k / 7), dw = k % 7;
+        if (d.getMonth() !== lastM && d.getDate() <= 7) { lastM = d.getMonth(); const tx = svgEl('text', { x: Lm + wk * (cell + gap), y: 10, class: 'ax' }); tx.textContent = MONTHS[lastM].slice(0, 3); svg.append(tx); }
+        const iso = isoDay(d); const n = (byDay[iso] || []).length;
+        const r = svgEl('rect', { x: Lm + wk * (cell + gap), y: Tm + dw * (cell + gap), width: cell, height: cell, rx: 2, class: 'c' + Math.min(n, 3) });
+        if (n) { r.dataset.d = iso; const tt = svgEl('title', {}); tt.textContent = `${fmtDate(iso)}: ${n} album${n > 1 ? 's' : ''}`; r.append(tt); }
+        svg.append(r);
+      }
+      svg.addEventListener('click', e => { const d = e.target.dataset && e.target.dataset.d; if (!d) return; svg.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')); e.target.classList.add('sel'); showDay(d); });
+      cal.append(svg);
+      const busiest = Object.entries(byDay).filter(([d]) => d.startsWith(calYear + '-')).sort((p, q) => q[1].length - p[1].length)[0];
+      const months = {}; for (const x of dated) if (x.d.startsWith(calYear + '-')) months[x.d.slice(5, 7)] = (months[x.d.slice(5, 7)] || 0) + 1;
+      const bm = Object.entries(months).sort((p, q) => q[1] - p[1])[0];
+      day.append(el('p', 'st-sub', `${yc[calYear] || 0} albums in ${calYear}${bm ? `. Busiest month: ${MONTHS[+bm[0] - 1]} (${bm[1]})` : ''}${busiest && busiest[1].length > 1 ? `. Busiest day: ${fmtDate(busiest[0])} (${busiest[1].length})` : ''}. Tap a day to see what you heard.`));
+    };
+    const showDay = d => { day.textContent = ''; day.append(el('p', 'st-sub', fmtDate(d))); const l = el('div', 'st-albs'); for (const a of byDay[d]) l.append(albumRow(a, `No. ${a.n} · ${a.sy}`)); day.append(l); };
+    drawCal();
+  }
+
+  // the classics
+  {
+    const s = statSection(root, 'By the numbers');
+    const sg = el('div', 'statgrid');
+    for (const [v, l] of [[A.length - heard.length, 'still to go'], [withNotes, 'with notes'], [favs, favs === 1 ? 'favourite' : 'favourites']]) { const b = el('div', 'stat'); b.append(el('b', '', v), el('span', '', l)); sg.append(b); }
+    s.append(sg);
+    const bars = (title, rows, max) => { s.append(el('h4', '', title)); for (const [k, v, lbl] of rows) { const r = el('div', 'hbar'); const tr = el('div', 'track'); const i = el('i'); i.style.width = (v / max * 100) + '%'; tr.append(i); r.append(el('span', '', k), tr, el('span', 'v', lbl ?? v)); s.append(r); } };
+    const decs = {}; for (const a of A) { const d = Math.floor(a.sy / 10) * 10; (decs[d] ||= [0, 0]); decs[d][1]++; if (isHeard(a.n)) decs[d][0]++; }
+    bars('By decade of release', Object.entries(decs).map(([d, [h, t]]) => [d + 's', h, `${h}/${t}`]), Math.max(...Object.values(decs).map(x => x[1])));
+    const gen = {}; for (const a of heard) { const g = (a.genre || '').split(' · ')[0]; if (g) { const k = g[0].toUpperCase() + g.slice(1); gen[k] = (gen[k] || 0) + 1; } }
+    const gtop = Object.entries(gen).sort((a, b) => b[1] - a[1]).slice(0, 8); if (gtop.length) bars('Most-heard genres', gtop, gtop[0][1]);
+  }
+  $('#statsPage').scrollTop = 0; $('#stClose').focus({ preventScroll: true });
+}
+function closeStats() { $('#statsPage').hidden = true; if ($('#sheet').hidden && $('#favPage').hidden) document.body.style.overflow = ''; }
+$('#statsBtn').onclick = openStats;
+$('#stClose').onclick = closeStats;
+
+/* ---------- backup ---------- */
+$('#backupBtn').onclick = () => { $('#backupModal').hidden = false; $('#bkStatus').textContent = ''; };
+$('#syncBtn').addEventListener('click', () => { $('#backupModal').hidden = true; });
+const stamp = () => todayISO();
+function notesPayload() {
+  const notes = Object.values(NOTES).filter(x => x && (x.heard || x.fav || hasNotes(x.n))).sort((a, b) => a.n - b.n)
+    .map(x => ({ n: x.n, artist: A[x.n - 1].artist, title: A[x.n - 1].title, heard: !!x.heard, favourite: !!x.fav, date: x.date || '', headline: x.headline || '', bullets: x.bullets || [], updated: x.updated || '' }));
+  return { app: 'Auditory Range', version: 1, edition: '2013', exported: new Date().toISOString(), count: notes.length, notes };
+}
+function journalMarkdown() {
+  const p = notesPayload(); const lines = [`# Auditory Range: my journal of 1001 Albums You Must Hear Before You Die`, '', `Exported ${fmtDate(stamp())}. ${p.notes.filter(x => x.heard).length} of ${A.length} albums heard.`, ''];
+  for (const x of p.notes) {
+    const a = A[x.n - 1];
+    lines.push(`## ${x.n}. ${a.artist} — ${a.title} (${a.sy})`, '');
+    const meta = [x.favourite ? '♥ Favourite' : '', x.heard ? `Heard${x.date ? ' ' + x.date : ''}` : 'Not heard yet', a.am ? `[Apple Music](https://music.apple.com/album/${a.am})` : '', a.wiki ? `[Wikipedia](${a.wiki})` : ''].filter(Boolean).join(' · ');
+    lines.push(`*${meta}*`, '');
+    if (x.headline) lines.push(`**${x.headline}**`, '');
+    for (const b of x.bullets) lines.push(`- ${b.replace(/\n+/g, ' ')}`);
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+async function save(filename, data) {
+  try { const blob = data instanceof Blob ? data : new Blob([data], { type: filename.endsWith('.json') ? 'application/json' : 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); $('#bkStatus').textContent = `Saved ${filename}.`; return true; }
+  catch (e) { $('#bkStatus').textContent = e && e.code === 'declined' ? 'Save cancelled.' : e && e.code === 'rate_limited' ? 'Another save prompt is open. Finish it first.' : 'Could not save the file.'; return false; }
+}
+$('#exJson').onclick = () => save(`1001-albums-notes-${stamp()}.json`, JSON.stringify(notesPayload(), null, 1));
+$('#exMd').onclick = () => save(`1001-albums-journal-${stamp()}.md`, journalMarkdown());
+$('#imFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let data; try { data = JSON.parse(await f.text()); } catch { $('#bkStatus').textContent = 'That file is not a notes backup (.json from this app).'; return; }
+  const rows = Array.isArray(data.notes) ? data.notes : null;
+  if (!rows) { $('#bkStatus').textContent = 'That file is not a notes backup (.json from this app).'; return; }
+  let ok = 0; $('#bkStatus').textContent = `Restoring ${rows.length} albums…`;
+  for (const r of rows) {
+    const n = +r.n; if (!(n >= 1 && n <= A.length)) continue;
+    const body = { n, heard: !!r.heard, fav: !!(r.favourite ?? r.fav), date: String(r.date || ''), headline: String(r.headline || ''), bullets: (r.bullets || []).map(String), updated: new Date().toISOString() };
+    NOTES[n] = body; pending.add(n); ok++;
+    if (ok % 25 === 0) $('#bkStatus').textContent = `Restoring… ${ok} of ${rows.length}`;
+  }
+  saveLocal(); paintTiles(); scheduleSync(100); $('#bkStatus').textContent = `Restored ${ok} albums.`;
+};
+
+/* zip (store-only) */
+const CRC = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files) {
+  const enc = new TextEncoder(); const parts = []; const central = []; let offset = 0;
+  const d = new Date(); const dt = ((d.getFullYear() - 1980) << 25) | ((d.getMonth() + 1) << 21) | (d.getDate() << 16) | (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  for (const f of files) {
+    const name = enc.encode(f.name); const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data; const crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint32(10, dt, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+    parts.push(h.buffer, name, data);
+    const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint32(12, dt, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+    central.push(c.buffer, name); offset += 30 + name.length + data.length;
+  }
+  const csize = central.reduce((s, b) => s + (b.byteLength ?? b.length), 0);
+  const e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, e.buffer], { type: 'application/zip' });
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function offlineHTML() {
+  const rows = A.map(a => {
+    const x = NOTES[a.n]; const heard = x && x.heard;
+    const notes = x ? `${x.headline ? `<p class="h">${esc(x.headline)}</p>` : ''}${(x.bullets || []).length ? `<ul>${x.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}` : '';
+    return `<article id="a${a.n}" class="${heard ? 'heard' : ''}"><img loading="lazy" src="covers/${pad(a.n)}.${COVER_EXT[a.n] || 'webp'}" alt=""><div><p class="k">No. ${a.n} · ${esc(fmtDate(a.date) || a.sy)}${heard ? ` · heard ${esc(x.date || '')}` : ''}${x && x.fav ? ' · ♥ favourite' : ''}</p><h2>${esc(a.title)}</h2><p class="a">${esc(a.artist)}</p><p class="m">${esc([a.label, a.genre, a.length].filter(Boolean).join(' · '))}</p>${notes}<p class="l">${a.am ? `<a href="https://music.apple.com/album/${a.am}">Apple Music</a>` : ''} ${a.wiki ? `<a href="${esc(a.wiki)}">Wikipedia</a>` : ''}</p></div></article>`;
+  }).join('\n');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auditory Range (offline copy)</title><style>body{margin:0;font:15px/1.5 system-ui,sans-serif;background:#f1f2f4;color:#14161b}header{padding:24px 16px;max-width:900px;margin:auto}h1{font:600 32px Georgia,serif;margin:0}main{max-width:900px;margin:auto;padding:0 16px 60px}article{display:grid;grid-template-columns:160px 1fr;gap:18px;padding:18px 0;border-top:1px solid #d5d8de}article img{width:160px;height:160px;object-fit:cover;border-radius:3px;background:#ddd}article:not(.heard) img{opacity:.45;filter:grayscale(.8)}h2{font:500 22px Georgia,serif;margin:2px 0}.k,.m{color:#5d6370;font-size:13px;margin:0}.a{margin:0 0 4px;font-weight:600}.h{font-weight:700;margin:8px 0 4px}ul{margin:6px 0;padding-left:20px}.l a{margin-right:12px;color:#d63645}@media(max-width:560px){article{grid-template-columns:96px 1fr}article img{width:96px;height:96px}}@media(prefers-color-scheme:dark){body{background:#0f1013;color:#ebe9e4}article{border-color:#2a2e36}.k,.m{color:#9097a3}.l a{color:#f0525e}}</style></head><body><header><h1>Auditory Range</h1><p>1001 Albums You Must Hear Before You Die, 2013 edition.</p><p>Offline copy exported ${esc(fmtDate(stamp()))}. ${A.filter(a => isHeard(a.n)).length} of ${A.length} heard.</p></header><main>${rows}</main></body></html>`;
+}
+$('#exZip').onclick = async () => {
+  const st = $('#bkStatus'); const btn = $('#exZip'); btn.disabled = true;
+  try {
+    const files = [];
+    for (let i = 0; i < A.length; i++) {
+      const a = A[i]; const b = await imageBlob(a, 'c');
+      if (b) { COVER_EXT[a.n] = b.ext; files.push({ name: `covers/${pad(a.n)}.${b.ext}`, data: b.u8 }); }
+      if (i % 20 === 0) st.textContent = `Collecting covers… ${i} of ${A.length}`;
+    }
+    st.textContent = 'Packing the archive…';
+    files.push({ name: 'notes.json', data: JSON.stringify(notesPayload(), null, 1) });
+    files.push({ name: 'journal.md', data: journalMarkdown() });
+    files.push({ name: 'albums.json', data: JSON.stringify(A.map(({ _s, t, c, ...r }) => r), null, 1) });
+    files.push({ name: 'index.html', data: offlineHTML() });
+    files.push({ name: 'README.txt', data: 'Open index.html in any browser to read your journal offline. notes.json can be restored into the app (Backup > Restore). albums.json holds the album details; covers/ holds every cover, named by book number.\n' });
+    await save(`1001-albums-archive-${stamp()}.zip`, makeZip(files));
+  } catch (e) { st.textContent = 'Could not build the archive. Check your connection and try again.'; }
+  btn.disabled = false;
+};
+
+/* ---------- replace a cover ---------- */
+function paintCoverButtons() {
+  const ok = !!syncCfg;
+  $('#coverBtn').hidden = !ok; $('#coverReset').hidden = !(ok && COVERS[current]);
+}
+function forgetImage(n) { urlCache.delete('t' + n); urlCache.delete('c' + n); }
+const blobB64 = async b => { const u = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+function refreshImages(n) {
+  const a = A[n - 1]; const t = tiles[n];
+  if (t) { const img = t.firstChild; img.classList.remove('on'); loadThumb(t); }
+  if (current === n) { imageURL(a, 'c').then(u => { if (u) { $('#artImg').src = u; $('#artBlur').hidden = true; } }); }
+  if (n === nextUp()) paintHeader(n);
+}
+async function prepareCover(file) {
+  // Keep the picture as it is, only scaled down if it is very large, so colours and framing stay untouched.
+  const bmp = await createImageBitmap(file);
+  const max = 1600, sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  if (sc === 1 && file.size < 4e6 && /image\/(jpeg|png|webp)/.test(file.type)) return file;
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(r => c.toBlob(b => r(b), 'image/jpeg', 0.92));
+}
+async function replaceCover(file) {
+  if (!file || !/^image\//.test(file.type)) { toast('Choose an image file (JPG, PNG or WebP).'); return; }
+  if (!syncCfg) { toast('Replacing covers needs sync to be set up.'); return; }
+  const n = current; const btn = $('#coverBtn'); btn.disabled = true; btn.textContent = 'Uploading…';
+  try {
+    const blob = await prepareCover(file);
+    const ext = /png/.test(blob.type) ? 'png' : /webp/.test(blob.type) ? 'webp' : 'jpg';
+    const path = `covers/${pad(n)}-${Date.now()}.${ext}`;
+    const r = await gh('contents/' + path, { method: 'PUT', body: JSON.stringify({ message: `Cover: No. ${n} ${A[n - 1].title}`, content: await blobB64(blob) }) });
+    if (!r.ok) throw new Error(r.status);
+    try { const c = await caches.open('ar-covers'); await c.put('/_cover/' + path, new Response(blob, { headers: { 'Content-Type': blob.type || 'image/jpeg' } })); } catch {}
+    COVERS[n] = path; markChanged('c' + n); forgetImage(n); refreshImages(n);
+    toast('Cover replaced.');
+  } catch (e) { toast(navigator.onLine ? 'Could not upload the cover. Try again.' : 'You are offline. Try again when connected.'); }
+  btn.disabled = false; btn.textContent = 'Replace cover'; paintCoverButtons();
+}
+$('#coverBtn').onclick = () => $('#coverFile').click();
+$('#coverFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) replaceCover(f); };
+$('#coverReset').onclick = async () => {
+  const n = current; if (!COVERS[n]) return;
+  delete COVERS[n]; markChanged('c' + n); forgetImage(n); refreshImages(n); toast('Original cover restored.');
+  paintCoverButtons();
+};
+(() => {
+  const art = $('#art');
+  art.addEventListener('dragover', e => { if (!syncCfg) return; e.preventDefault(); art.classList.add('drop'); });
+  art.addEventListener('dragleave', () => art.classList.remove('drop'));
+  art.addEventListener('drop', e => { art.classList.remove('drop'); if (!syncCfg) return; e.preventDefault(); const f = [...(e.dataTransfer.files || [])].find(f => /^image\//.test(f.type)); if (f) replaceCover(f); });
+  document.addEventListener('paste', e => {
+    if ($('#sheet').hidden || !syncCfg) return;
+    const f = [...(e.clipboardData && e.clipboardData.files || [])].find(f => /^image\//.test(f.type));
+    if (f) { e.preventDefault(); replaceCover(f); }
+  });
+})();
+
+/* ---------- storage ---------- */
+function banner(msg, action) {
+  $('#banner').hidden = !msg; const t = $('#bannerText'); t.textContent = msg || '';
+  if (msg && action) { const b = el('button', 'linkish', action[0]); b.type = 'button'; b.onclick = action[1]; t.append(' ', b); }
+}
+/* ---------- storage: local cache + GitHub sync ----------
+   Notes live in localStorage on each device and in notes.json in a private GitHub repo.
+   Each album keeps an `updated` timestamp; when two devices disagree, the newer edit wins per album. */
+const LS = { notes: 'ar.notes', pending: 'ar.pending', sync: 'ar.sync', sha: 'ar.sha', covers: 'ar.covers', last: 'ar.lastSync' };
+let pending = new Set(store.get(LS.pending, []));
+let syncCfg = store.get(LS.sync, null);   // {owner, repo, token}
+let remoteSha = store.get(LS.sha, null);
+let syncTimer = null, syncing = null, lastSync = store.get(LS.last, '');
+function saveLocal() { store.set(LS.notes, NOTES); store.set(LS.pending, [...pending]); store.set(LS.covers, COVERS); }
+const b64e = s => { const u = new TextEncoder().encode(s); let b = ''; for (let i = 0; i < u.length; i += 0x8000) b += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(b); };
+const b64d = s => { const bin = atob(s.replace(/\n/g, '')); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder().decode(u); };
+async function gh(path, opt = {}) {
+  const r = await fetch(`https://api.github.com/repos/${syncCfg.owner}/${syncCfg.repo}/${path}`, { ...opt, cache: 'no-store', headers: { Authorization: `Bearer ${syncCfg.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opt.headers || {}) } });
+  return r;
+}
+async function pullRemote() {
+  const r = await gh('contents/notes.json');
+  if (r.status === 404) return { sha: null, data: { notes: {}, covers: {} } };
+  if (!r.ok) throw Object.assign(new Error('pull ' + r.status), { status: r.status });
+  const j = await r.json(); let text;
+  if (j.content) text = b64d(j.content);
+  else { const b = await gh('git/blobs/' + j.sha); if (!b.ok) throw new Error('blob ' + b.status); text = b64d((await b.json()).content); }
+  const data = JSON.parse(text); data.notes ||= {}; data.covers ||= {};
+  return { sha: j.sha, data };
+}
+function mergeRemote(data) {
+  let changed = false;
+  for (const [k, rn] of Object.entries(data.notes)) {
+    const n = +k, ln = NOTES[n];
+    if (pending.has(n) && ln && (ln.updated || '') >= (rn.updated || '')) continue;
+    if (!ln || JSON.stringify(ln) !== JSON.stringify(rn)) { NOTES[n] = rn; changed = true; pending.delete(n); if (n === current && !dirty) renderNoteEditor(); }
+  }
+  for (const [k, path] of Object.entries(data.covers || {})) if (COVERS[k] !== path && !pending.has('c' + k)) { COVERS[k] = path; forgetImage(+k); refreshImages(+k); changed = true; }
+  for (const k of Object.keys(COVERS)) if (!(k in (data.covers || {})) && !pending.has('c' + k)) { delete COVERS[k]; forgetImage(+k); refreshImages(+k); changed = true; }
+  return changed;
+}
+function syncState(s) { const e = $('#syncState'); if (e) e.textContent = s || 'Off'; const d = $('#syncDot'); if (d) d.dataset.s = /^Sync (error|failed)/.test(s) ? 'err' : ''; }
+async function syncNow() {
+  if (!syncCfg) return;
+  if (syncing) return syncing;
+  syncing = (async () => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        syncState('Syncing…');
+        const { sha, data } = await pullRemote();
+        const changed = mergeRemote(data);
+        if (changed) paintTiles();
+        remoteSha = sha;
+        if (pending.size) {
+          const out = { app: 'Auditory Range', format: 1, updated: new Date().toISOString(), notes: {}, covers: { ...data.covers } };
+          const merged = { ...data.notes }; for (const [n, x] of Object.entries(NOTES)) if (pending.has(+n) || !(n in merged)) merged[n] = x;
+          for (const k of Object.keys(merged).sort((a, b) => a - b)) out.notes[k] = merged[k];
+          for (const p of pending) if (typeof p === 'string' && p[0] === 'c') { const k = p.slice(1); if (COVERS[k]) out.covers[k] = COVERS[k]; else delete out.covers[k]; }
+          const nums = [...pending].filter(p => typeof p === 'number');
+          const msg = nums.length === 1 ? `Notes: No. ${nums[0]} ${A[nums[0] - 1] ? A[nums[0] - 1].title : ''}` : `Notes: ${pending.size} changes`;
+          const body = { message: msg, content: b64e(JSON.stringify(out, null, 1)) }; if (sha) body.sha = sha;
+          const r = await gh('contents/notes.json', { method: 'PUT', body: JSON.stringify(body) });
+          if (r.status === 409 || r.status === 422) continue;   // someone else saved first: pull, merge and try again
+          if (!r.ok) throw Object.assign(new Error('push ' + r.status), { status: r.status });
+          remoteSha = (await r.json()).content.sha; pending.clear();
+        }
+        store.set(LS.sha, remoteSha); saveLocal();
+        lastSync = new Date().toISOString(); store.set(LS.last, lastSync);
+        syncState('Synced'); banner('');
+        return true;
+      } catch (e) {
+        if (e.status === 401 || e.status === 403) { syncState('Sync error: token'); banner('GitHub refused the access token. Your notes are saved on this device.', ['Fix sync settings', openSync]); return false; }
+        if (e.status === 404) { syncState('Sync error: repo'); banner('Could not find the notes repository on GitHub. Your notes are saved on this device.', ['Fix sync settings', openSync]); return false; }
+        if (attempt === 3 || !navigator.onLine) { syncState(navigator.onLine ? 'Sync failed, will retry' : 'Offline, will sync later'); return false; }
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
+    syncState('Sync failed, will retry'); return false;
+  })().finally(() => { syncing = null; });
+  return syncing;
+}
+function scheduleSync(ms = 1500) { if (!syncCfg) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, ms); }
+function markChanged(key) { pending.add(key); saveLocal(); scheduleSync(); }
+addEventListener('online', () => scheduleSync(200));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleSync(200); else if (pending.size) syncNow(); });
+setInterval(() => { if (!document.hidden) syncNow(); }, 120000);
+
+/* sync settings dialog */
+function openSync() {
+  $('#syncModal').hidden = false; $('#bkStatus').textContent = '';
+  $('#syOwner').value = (syncCfg && syncCfg.owner) || ''; $('#syRepo').value = (syncCfg && syncCfg.repo) || 'auditory-range-data'; $('#syToken').value = (syncCfg && syncCfg.token) || '';
+  $('#syStatus').textContent = syncCfg ? (lastSync ? `Connected to ${syncCfg.owner}/${syncCfg.repo}. Last synced ${new Date(lastSync).toLocaleString()}.` : `Connected to ${syncCfg.owner}/${syncCfg.repo}.`) : 'Not connected. Notes are only saved on this device.';
+  $('#syOff').hidden = !syncCfg;
+}
+$('#syncBtn').onclick = openSync;
+$('#syGo').onclick = async () => {
+  const cfg = { owner: $('#syOwner').value.trim(), repo: $('#syRepo').value.trim(), token: $('#syToken').value.trim() };
+  if (!cfg.owner || !cfg.repo || !cfg.token) { $('#syStatus').textContent = 'Fill in all three fields.'; return; }
+  $('#syStatus').textContent = 'Checking…';
+  const prev = syncCfg; syncCfg = cfg;
+  try {
+    const r = await gh('');
+    if (r.status === 401) throw new Error('That token was not accepted. Check it was copied in full.');
+    if (r.status === 404) throw new Error(`Could not see ${cfg.owner}/${cfg.repo}. Check the names, and that the token has access to that repository.`);
+    if (!r.ok) throw new Error('GitHub answered ' + r.status + '. Try again in a moment.');
+    const j = await r.json();
+    if (j.permissions && !j.permissions.push) throw new Error('The token can read but not write. Give it "Contents: Read and write".');
+    store.set(LS.sync, cfg);
+    // first connection on this device: everything local counts as a change so nothing is lost
+    if (!prev) { for (const n of Object.keys(NOTES)) pending.add(+n); }
+    const ok = await syncNow();
+    $('#syStatus').textContent = ok ? `Connected. ${Object.keys(NOTES).length} albums synced.` : 'Connected, but the first sync did not finish. It will retry.';
+    $('#syOff').hidden = false;
+  } catch (e) { syncCfg = prev; $('#syStatus').textContent = e.message; }
+};
+$('#syOff').onclick = () => { syncCfg = null; try { localStorage.removeItem(LS.sync); } catch {} $('#syStatus').textContent = 'Disconnected. Notes stay on this device.'; $('#syOff').hidden = true; syncState(''); };
+$('#syncModal').addEventListener('click', e => { if (e.target.id === 'syncModal' || e.target.closest('[data-close]')) $('#syncModal').hidden = true; });
+
+async function connect() {
+  NOTES = store.get(LS.notes, {}) || {}; COVERS = store.get(LS.covers, {}) || {};
+  dbReady = true; paintTiles();
+  if (!scrolledToNext) { scrolledToNext = true; if (!/^#a\d+$/.test(location.hash)) centerOn(nextUp()); }
+  if (pendingHash) { const n = pendingHash; pendingHash = 0; openAlbum(n, false); }
+  if (!syncCfg) { banner(Object.keys(NOTES).length ? 'Sync is off. Notes are saved on this device only.' : 'Connect your notes repository to load your notes and sync across devices.', ['Set up sync', openSync]); return; }
+  const had = Object.keys(NOTES).length;
+  await syncNow();
+  if (!had) centerOn(nextUp());
+}
+let pendingHash = 0, scrolledToNext = false;
+function centerOn(n, smooth) {
+  const t = tiles[n]; if (!t) return;
+  const top = t.getBoundingClientRect().top + scrollY - (innerHeight + $('#top').offsetHeight) / 2 + t.offsetHeight / 2;
+  scrollTo({ top: Math.max(0, top), behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto' });
+}
+
+/* ---------- boot ---------- */
+async function boot() {
+  setCols(); const z = store.get('z', innerWidth < 640 ? 96 : 104); zoom.value = z; setZoom(z);
+  const f = store.get('f', 'all'); const chip = document.querySelector(`.chip[data-f="${f}"]`); if (chip) chip.click();
+  let cat;
+  try { cat = await fetch('catalog.json').then(r => r.json()); }
+  catch { $('#wall').innerHTML = '<p class="empty-note">The album list could not load. Reload the page.</p>'; return; }
+  A = cat.albums; for (const a of A) a._s = `${a.artist} ${a.title} ${a.genre || ''} ${a.label || ''} ${a.sy}`.toLowerCase();
+  buildWall(); measureTop(); paintTiles();
+  const m = /^#a(\d+)$/.exec(location.hash); if (m) { pendingHash = +m[1]; openAlbum(pendingHash, false); }
+  connect();
+}
+boot();
+})();
+</script>
+
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>
