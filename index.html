@@ -634,7 +634,7 @@ function openAlbum(n, push = true) {
   imageURL(a, 't').then(u => { if (u && current === n) blur.style.backgroundImage = `url(${u})`; }).catch(() => {});
   imageURL(a, 'c').then(u => { if (u && current === n) { img.src = u; img.onload = () => { if (current === n) blur.hidden = true; }; } }).catch(() => {});
   $('#aPos').textContent = `No. ${n} of ${A.length}`;
-  $('#aKicker').textContent = fmtDate(a.date);
+  $('#aKicker').textContent = [fmtDate(a.date), a.pg ? `Book page ${a.pg}` : ''].filter(Boolean).join(' · ');
   $('#aTitle').textContent = a.title; $('#aArtist').textContent = a.artist;
   const am = $('#amLink');
   am.href = a.am ? `https://music.apple.com/album/${a.am}` : `https://music.apple.com/search?term=${encodeURIComponent(a.artist + ' ' + a.title)}`;
