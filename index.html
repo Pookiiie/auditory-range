@@ -1164,7 +1164,7 @@ function saveLocal() { store.set(LS.notes, NOTES); store.set(LS.pending, [...pen
 const b64e = s => { const u = new TextEncoder().encode(s); let b = ''; for (let i = 0; i < u.length; i += 0x8000) b += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(b); };
 const b64d = s => { const bin = atob(s.replace(/\n/g, '')); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder().decode(u); };
 async function gh(path, opt = {}) {
-  const r = await fetch(`https://api.github.com/repos/${syncCfg.owner}/${syncCfg.repo}/${path}`, { ...opt, cache: 'no-store', headers: { Authorization: `Bearer ${syncCfg.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opt.headers || {}) } });
+  const r = await fetch(`https://api.github.com/repos/${encodeURIComponent(syncCfg.owner)}/${encodeURIComponent(syncCfg.repo)}${path ? '/' + path : ''}`, { ...opt, cache: 'no-store', headers: { Authorization: `Bearer ${syncCfg.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opt.headers || {}) } });
   return r;
 }
 async function pullRemote() {
