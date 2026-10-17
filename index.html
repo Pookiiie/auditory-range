@@ -589,7 +589,7 @@ function paintHeader(nx) {
   if (nx) {
     const a = A[nx - 1]; chip.hidden = false;
     $('#nextNum').textContent = 'No. ' + nx; $('#nextTitle').innerHTML = `<b>${esc(a.title)}</b><i> · ${esc(a.artist)}</i>`;
-    imageURL(a, 't').then(u => { if (!u) return; const old = $('#nextImg'); const i = el('img'); i.id = 'nextImg'; i.alt = ''; i.src = u; old.replaceWith(i); }).catch(() => {});
+    chip.dataset.n = nx; imageURL(a, 't').then(u => { if (!u || chip.dataset.n !== String(nx)) return; const old = $('#nextImg'); const i = el('img'); i.id = 'nextImg'; i.alt = ''; i.src = u; old.replaceWith(i); }).catch(() => {});
   } else chip.hidden = true;
   // decades
   const box = $('#decades'); box.textContent = '';
