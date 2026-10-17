@@ -78,8 +78,10 @@ a.btn{text-decoration:none;color:inherit}
 .next-chip .t #nextTitle{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .next-chip .t #nextTitle b{font-weight:700}
 .next-chip .t #nextTitle i{font-style:normal;color:rgba(255,255,255,.85)}
-.next-chip .chev{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.18);margin-left:4px}
-.next-chip .chev svg{width:14px;height:14px}
+.next-chip{padding-right:5px!important}
+.next-chip .chev{flex:none;align-self:stretch;display:grid;place-items:center;width:44px;min-height:36px;border-radius:7px;background:rgba(255,255,255,.2);margin-left:6px;transition:background .15s}
+.next-chip .chev:hover{background:rgba(255,255,255,.32)}
+.next-chip .chev svg{width:18px;height:18px}
 
 /* decade strip */
 .decades{display:flex;gap:3px;padding:0 16px 10px;max-width:1800px;margin:0 auto}
@@ -347,7 +349,7 @@ a.iconbtn{color:inherit;text-decoration:none}
     <div class="spacer"></div>
     <button class="next-chip" id="nextChip" type="button" hidden>
       <span class="ph" id="nextImg"></span>
-      <span class="t"><small>Up next · <span id="nextNum" style="font-variant-numeric:tabular-nums"></span></small><span id="nextTitle"></span></span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg></span>
+      <span class="t"><small>Up next · <span id="nextNum" style="font-variant-numeric:tabular-nums"></span></small><span id="nextTitle"></span></span><span class="chev" title="Open album details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg></span>
     </button>
     <button class="iconbtn m-only" id="mSearchBtn" type="button" title="Search" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
     <button class="iconbtn m-only" id="filterBtn" type="button" title="Filter" aria-label="Filter" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg><i class="fdot" hidden></i></button>
@@ -741,7 +743,7 @@ document.addEventListener('keydown', e => {
 })();
 
 /* ---------- header controls ---------- */
-$('#nextChip').onclick = () => { const n = nextUp(); if (!n) return; if (filter !== 'all' || query) { filter = 'all'; query = ''; $('#q').value = ''; closeSearch(false); document.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'all')); paintFilterDot(); applyFilter(); } centerOn(n, true); tiles[n].focus({ preventScroll: true }); };
+$('#nextChip').onclick = e => { if (e.target.closest('.chev')) { const n = nextUp(); if (n) openAlbum(n); return; } const n = nextUp(); if (!n) return; if (filter !== 'all' || query) { filter = 'all'; query = ''; $('#q').value = ''; closeSearch(false); document.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'all')); paintFilterDot(); applyFilter(); } centerOn(n, true); tiles[n].focus({ preventScroll: true }); };
 $('#q').addEventListener('input', e => { query = e.target.value; applyFilter(); });
 function openSearch() { $('#searchBox').hidden = false; $('.tools').classList.add('searching'); $('#searchBtn').setAttribute('aria-expanded', 'true'); $('#q').focus(); measureTop(); }
 function closeSearch(clear) { if (clear) { $('#q').value = ''; query = ''; applyFilter(); } if ($('#q').value) return; $('#searchBox').hidden = true; $('.tools').classList.remove('searching'); $('#searchBtn').setAttribute('aria-expanded', 'false'); measureTop(); }
