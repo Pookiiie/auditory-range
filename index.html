@@ -602,7 +602,13 @@ function paintHeader(nx) {
   }
 }
 function jumpTo(n) { const t = tiles[n]; if (!t) return; t.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); t.focus({ preventScroll: true }); }
+// Bring the Up Next album back into view after the wall was hidden or reshuffled.
+function backToNext() { const n = nextUp(); if (!n) return; requestAnimationFrame(() => requestAnimationFrame(() => centerOn(n))); }
+let wasFiltered = false;
 function applyFilter() {
+  const filtered = filter !== 'all' || !!query.trim();
+  if (wasFiltered && !filtered) backToNext();
+  wasFiltered = filtered;
   const q = query.trim().toLowerCase();
   for (const a of A) {
     const t = tiles[a.n]; if (!t) continue;
@@ -625,7 +631,9 @@ function applyFilter() {
 
 /* ---------- album sheet ---------- */
 let saveTimer = null, dirty = false, writing = Promise.resolve();
+let wallY = null;
 function openAlbum(n, push = true) {
+  if ($('#sheet').hidden && $('#favPage').hidden && $('#statsPage').hidden) wallY = scrollY;
   if (!n || n < 1 || n > A.length) return;
   flushSave();
   current = n; const a = A[n - 1];
@@ -657,6 +665,8 @@ function openAlbum(n, push = true) {
 function closeAlbum() {
   flushSave(); current = 0; $('#sheet').hidden = true; document.body.style.overflow = ($('#favPage').hidden && $('#statsPage').hidden) ? '' : 'hidden';
   if (!$('#favPage').hidden) openFavs();
+  else if ($('#statsPage').hidden) { if (wallY && wallY > 40) scrollTo(0, wallY); else backToNext(); }
+  wallY = null;
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
 function note(n) { return NOTES[n] || { heard: false, date: '', headline: '', bullets: [] }; }
@@ -827,7 +837,7 @@ function openFavs() {
   }
   $('#favPage').hidden = false; document.body.style.overflow = 'hidden'; $('#fvClose').focus({ preventScroll: true });
 }
-function closeFavs() { $('#favPage').hidden = true; if ($('#sheet').hidden) document.body.style.overflow = ''; }
+function closeFavs() { $('#favPage').hidden = true; if ($('#sheet').hidden && $('#statsPage').hidden) { document.body.style.overflow = ''; backToNext(); } }
 $('#favsBtn').onclick = openFavs;
 $('#fvClose').onclick = closeFavs;
 
@@ -999,7 +1009,7 @@ function openStats() {
   }
   $('#statsPage').scrollTop = 0; $('#stClose').focus({ preventScroll: true });
 }
-function closeStats() { $('#statsPage').hidden = true; if ($('#sheet').hidden && $('#favPage').hidden) document.body.style.overflow = ''; }
+function closeStats() { $('#statsPage').hidden = true; if ($('#sheet').hidden && $('#favPage').hidden) { document.body.style.overflow = ''; backToNext(); } }
 $('#statsBtn').onclick = openStats;
 $('#stClose').onclick = closeStats;
 
