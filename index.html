@@ -811,7 +811,7 @@ function renderExtras(a) {
 /* ---------- favourites page ---------- */
 function openFavs() {
   const list = $('#fvList'); list.textContent = '';
-  const favs = A.filter(a => isFav(a.n));
+  const favs = A.filter(a => isFav(a.n)).sort((p, q) => q.n - p.n);
   $('#fvCount').textContent = favs.length ? favs.length : '';
   if (!favs.length) list.append(el('p', 'fv-empty', 'No favourites yet. Open an album and tap the heart to add it here.'));
   for (const a of favs) {
