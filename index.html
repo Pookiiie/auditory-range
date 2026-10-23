@@ -136,8 +136,11 @@ main{max-width:1800px;margin:0 auto;padding-block:8px 80px;padding-inline:16px}
   .grid{grid-template-columns:repeat(var(--cols,4),1fr)}
 }
 .tile{position:relative;aspect-ratio:1;border:0;padding:0;border-radius:var(--radius);overflow:hidden;background:var(--c,var(--raise));display:block;width:100%;max-width:100%}
-.tile img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s, filter .25s}
-.tile img.on{opacity:1}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.04);transition:opacity .4s ease, transform .6s ease, filter .25s}
+.tile img.on{opacity:1;transform:none}
+.tile:not(.ld)::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.16) 50%,transparent 65%);background-size:300% 100%;animation:shim 1.6s linear infinite;pointer-events:none}
+@keyframes shim{from{background-position:100% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.tile:not(.ld)::before{animation:none;display:none}.tile img{transform:none}}
 .tile:not(.heard) img{filter:saturate(var(--dimsat)) brightness(.9)}
 .tile:not(.heard){opacity:var(--dim)}
 .tile:not(.heard):hover,.tile:not(.heard):focus-visible{opacity:1}
@@ -339,6 +342,34 @@ a.iconbtn{color:inherit;text-decoration:none}
 .sdot[data-s="err"]{display:block;background:#e0a100}
 .banner .linkish{color:var(--accent);font-size:14px}
 [hidden]{display:none!important}
+
+.tracks li{grid-template-columns:26px 1fr auto 30px!important;align-items:center}
+.tfav{border:0;background:none;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);opacity:.45;border-radius:50%;padding:0}
+.tfav svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.tfav:hover{opacity:1}
+.tfav[aria-pressed="true"]{color:var(--accent);opacity:1}
+.tfav[aria-pressed="true"] svg{fill:currentColor}
+.fv-sec{grid-column:1/-1;font-family:var(--f-display);font-weight:700;font-size:22px;margin:18px 0 0;padding-top:16px;border-top:1px solid var(--line)}
+.fv-sec span{font-family:var(--f-ui);font-weight:400;font-size:14px;color:var(--muted)}
+.fv-track{display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:start;text-align:left;border:0;background:none;padding:0;color:inherit}
+.fv-track img,.fv-track .ph{width:56px;height:56px;object-fit:cover;border-radius:var(--radius);background:var(--c,var(--raise));display:block}
+.fv-track .k{font-size:12px;color:var(--muted)}
+.fv-track ul{list-style:none;margin:3px 0 0;padding:0;font-size:15px;font-weight:500}
+.fv-track li::before{content:"♥ ";color:var(--accent);font-size:12px}
+
+.cele{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;background:color-mix(in srgb,#000 72%,var(--accent));animation:celeIn .35s ease}
+.cele-card{width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto;text-align:center;color:#fff}
+.cele-big{font-family:var(--f-display);font-weight:700;font-size:clamp(84px,24vw,150px);line-height:.9;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.35);animation:celePop .6s cubic-bezier(.2,1.4,.4,1) both}
+.cele-card h2{font-family:var(--f-display);font-weight:700;font-size:28px;margin:10px 0 4px}
+.cele-card p{margin:0 auto 18px;max-width:42ch;color:rgba(255,255,255,.85)}
+.cele-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:0 0 20px}
+.cele-grid span{aspect-ratio:1;background:var(--c,#333);border-radius:2px;overflow:hidden;animation:celeTile .45s ease both}
+.cele-grid img{width:100%;height:100%;object-fit:cover;display:block}
+.cele .btn.primary{background:#fff;color:var(--accent);font-weight:700;padding-inline:22px}
+@keyframes celeIn{from{opacity:0}}
+@keyframes celePop{from{transform:scale(.6);opacity:0}}
+@keyframes celeTile{from{transform:scale(.4);opacity:0}}
+@media (prefers-reduced-motion: reduce){.cele,.cele-big,.cele-grid span{animation:none}}
 </style>
 </head>
 <body>
@@ -458,6 +489,7 @@ a.iconbtn{color:inherit;text-decoration:none}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" id="syOff" type="button" hidden>Disconnect</button><button class="btn" data-close type="button">Close</button><button class="btn primary" id="syGo" type="button">Connect</button></div>
   </div>
 </div>
+<div class="cele" id="cele" hidden role="dialog" aria-modal="true" aria-label="Milestone"><div class="cele-card" id="celeCard"></div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -558,7 +590,7 @@ function buildWall() {
 }
 async function loadThumb(b) {
   const a = A[b.dataset.n - 1]; const img = b.firstChild;
-  try { const u = await imageURL(a, 't'); if (u) { img.src = u; img.onload = () => img.classList.add('on'); } } catch {}
+  try { const u = await imageURL(a, 't'); if (u) { img.onload = () => { img.classList.add('on'); b.classList.add('ld'); }; img.onerror = () => b.classList.add('ld'); img.src = u; } else b.classList.add('ld'); } catch { b.classList.add('ld'); }
 }
 function hasNotes(n) { const x = NOTES[n]; return !!(x && ((x.bullets && x.bullets.some(s => s.trim())) || (x.headline && x.headline.trim()))); }
 function isHeard(n) { return !!(NOTES[n] && NOTES[n].heard); }
@@ -590,6 +622,7 @@ function paintHeader(nx) {
   if (nx) {
     const a = A[nx - 1]; chip.hidden = false;
     $('#nextNum').textContent = 'No. ' + nx; $('#nextTitle').innerHTML = `<b>${esc(a.title)}</b><i> · ${esc(a.artist)}</i>`;
+    if (chip.dataset.n !== String(nx)) { const ph = el('span', 'ph'); ph.id = 'nextImg'; ph.style.background = a.col || ''; $('#nextImg').replaceWith(ph); }
     chip.dataset.n = nx; imageURL(a, 't').then(u => { if (!u || chip.dataset.n !== String(nx)) return; const old = $('#nextImg'); const i = el('img'); i.id = 'nextImg'; i.alt = ''; i.src = u; old.replaceWith(i); }).catch(() => {});
   } else chip.hidden = true;
   // decades
@@ -674,9 +707,9 @@ function note(n) { return NOTES[n] || { heard: false, date: '', headline: '', bu
 let editing = null; // working copy for current album
 function renderNoteEditor() {
   const x = note(current);
-  editing = { heard: !!x.heard, fav: !!x.fav, date: x.date || '', headline: x.headline || '', bullets: (x.bullets && x.bullets.length ? [...x.bullets] : ['']) };
+  editing = { heard: !!x.heard, fav: !!x.fav, ft: [...(x.ft || [])], date: x.date || '', headline: x.headline || '', bullets: (x.bullets && x.bullets.length ? [...x.bullets] : ['']) };
   dirty = false; setSaveState('');
-  paintHeardBtn(); paintFavBtn();
+  paintHeardBtn(); paintFavBtn(); paintTrackHearts();
   $('#dateIn').value = editing.date;
   const h = $('#headIn'); h.value = editing.headline; showHead(!!editing.headline.trim()); autosize(h);
   drawBullets();
@@ -684,6 +717,13 @@ function renderNoteEditor() {
   $('#roNote').hidden = true;
 }
 function showHead(on) { $('#headRow').hidden = !on; $('#addHead').hidden = on; }
+const HEART_SVG = '<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M12 20.3s-7.4-4.5-9.1-9.2C1.7 7.7 3.9 4.6 7.2 4.6c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.3 6.5-1.7 4.7-9.1 9.2-9.1 9.2z"/></svg>';
+function paintTrackHearts() { if (!editing) return; document.querySelectorAll('#aTracks .tfav').forEach(b => { const on = editing.ft.includes(b.dataset.t); b.setAttribute('aria-pressed', on); b.title = on ? 'Remove from favourite tracks' : 'Add to favourite tracks'; }); }
+function toggleTrack(t) {
+  if (!canWrite || !current) return;
+  const i = editing.ft.indexOf(t); if (i >= 0) editing.ft.splice(i, 1); else editing.ft.push(t);
+  paintTrackHearts(); dirty = true; setSaveState('Saving…'); flushSave();
+}
 function paintFavBtn() { const b = $('#favBtn'); b.setAttribute('aria-pressed', editing.fav); b.title = editing.fav ? 'Remove from favourites' : 'Add to favourites'; }
 function paintHeardBtn() { const b = $('#heardBtn'); b.setAttribute('aria-pressed', editing.heard); b.textContent = editing.heard ? '✓ Heard' : 'Mark as heard'; }
 function drawBullets(focusIdx, caretEnd) {
@@ -720,11 +760,11 @@ function flushSave() {
   if (!dirty || !current) return;
   dirty = false;
   const n = current;
-  const body = { n, heard: !!editing.heard, fav: !!editing.fav, date: editing.date || '', headline: editing.headline.trim() ? editing.headline : '', bullets: editing.bullets.filter(b => b.trim()), updated: new Date().toISOString() };
+  const body = { n, heard: !!editing.heard, fav: !!editing.fav, ...(editing.ft && editing.ft.length ? { ft: [...editing.ft] } : {}), date: editing.date || '', headline: editing.headline.trim() ? editing.headline : '', bullets: editing.bullets.filter(b => b.trim()), updated: new Date().toISOString() };
   NOTES[n] = body; paintTiles();
   markChanged(n); setSaveState(syncCfg ? 'Saved' : 'Saved on this device');
 }
-$('#heardBtn').onclick = () => { editing.heard = !editing.heard; if (editing.heard && !editing.date) { editing.date = todayISO(); $('#dateIn').value = editing.date; } paintHeardBtn(); dirty = true; setSaveState('Saving…'); flushSave(); };
+$('#heardBtn').onclick = () => { const before = A.filter(a => isHeard(a.n)).length; editing.heard = !editing.heard; if (editing.heard) setTimeout(() => checkMilestone(before, current), 350); if (editing.heard && !editing.date) { editing.date = todayISO(); $('#dateIn').value = editing.date; } paintHeardBtn(); dirty = true; setSaveState('Saving…'); flushSave(); };
 $('#favBtn').onclick = () => { editing.fav = !editing.fav; paintFavBtn(); dirty = true; setSaveState('Saving…'); flushSave(); toast(editing.fav ? 'Added to favourites.' : 'Removed from favourites.'); };
 $('#addHead').onclick = () => { showHead(true); const h = $('#headIn'); autosize(h); h.focus(); };
 $('#headIn').addEventListener('blur', e => { if (!e.target.value.trim()) showHead(false); });
@@ -737,6 +777,7 @@ $('#prevBtn').onclick = () => openAlbum(current - 1);
 $('#nextBtn').onclick = () => openAlbum(current + 1);
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeAlbum(); });
 document.addEventListener('keydown', e => {
+  if (!$('#cele').hidden) { if (e.key === 'Escape') $('#cele').hidden = true; return; }
   if (!$('#sheet').hidden) {
     const typing = /TEXTAREA|INPUT/.test(document.activeElement.tagName);
     if (e.key === 'Escape') { if (typing) document.activeElement.blur(); else closeAlbum(); }
@@ -799,13 +840,15 @@ function renderExtras(a) {
         const ol = el('ol');
         for (const [num, title, len, nt] of g.t) {
           const li = el('li'); const nm = el('span', '', title); if (nt) nm.append(el('small', '', nt));
-          li.append(el('span', 'i', String(num)), nm, el('span', 'd', len || ''));
+          const hb = el('button', 'tfav'); hb.type = 'button'; hb.dataset.t = title; hb.innerHTML = HEART_SVG; hb.setAttribute('aria-label', `Favourite track: ${title}`);
+          hb.onclick = () => toggleTrack(title);
+          li.append(el('span', 'i', String(num)), nm, el('span', 'd', len || ''), hb);
           ol.append(li);
         }
         tb.append(ol);
       }
       if (x.tot) tb.append(el('p', 'tot', `Total length ${x.tot}`));
-      tb.hidden = false;
+      tb.hidden = false; paintTrackHearts();
     }
     if (x.sec && x.sec.length) {
       for (const [h, txt, open] of x.sec) {
@@ -819,12 +862,46 @@ function renderExtras(a) {
   }).catch(() => {});
 }
 
+
+/* ---------- milestones ---------- */
+function checkMilestone(before, n) {
+  const count = A.filter(a => isHeard(a.n)).length; if (count <= before || !n) return;
+  let done = []; try { done = JSON.parse(localStorage.getItem('ar.cele') || '[]'); } catch {}
+  const mark = k => { done.push(k); try { localStorage.setItem('ar.cele', JSON.stringify(done)); } catch {} };
+  const a = A[n - 1], dec = Math.floor(a.sy / 10) * 10, inDec = A.filter(x => Math.floor(x.sy / 10) * 10 === dec);
+  const decDone = inDec.every(x => isHeard(x.n));
+  if ((count % 50 === 0 || count === A.length) && !done.includes('n' + count)) { mark('n' + count); celebrate({ kind: 'count', count, dec: decDone ? dec : null }); return; }
+  if (decDone && !done.includes('d' + dec)) { mark('d' + dec); celebrate({ kind: 'decade', dec, albums: inDec }); }
+}
+function celebrate(m) {
+  const box = $('#celeCard'); box.textContent = '';
+  const heardList = A.filter(a => isHeard(a.n)).sort((p, q) => ((NOTES[q.n].date || '') + String(q.n).padStart(4, '0')).localeCompare((NOTES[p.n].date || '') + String(p.n).padStart(4, '0')));
+  let big, title, sub, covers;
+  if (m.kind === 'count') {
+    big = String(m.count);
+    if (m.count === A.length) { title = 'All 1001.'; sub = 'You have heard every album in the book. What a journey.'; covers = heardList.slice(0, 60); }
+    else if (m.count === 500) { title = 'Halfway there.'; sub = `500 albums heard, ${A.length - 500} to go. Here are your last 50.`; covers = heardList.slice(0, 50); }
+    else { title = `${m.count} albums heard.`; sub = `${A.length - m.count} to go. Here are the last 50.`; covers = heardList.slice(0, 50); }
+    if (m.dec) sub += ` And that finishes the ’${String(m.dec).slice(2)}s.`;
+  } else {
+    big = `’${String(m.dec).slice(2)}s`; title = `Every album from the ${m.dec}s.`;
+    sub = `${m.albums.length} albums, all heard.`; covers = m.albums.slice(-60);
+  }
+  box.append(el('div', 'cele-big', big), el('h2', '', title), el('p', '', sub));
+  const g = el('div', 'cele-grid');
+  covers.forEach((a, i) => { const t = el('span'); t.style.setProperty('--c', a.col || ''); t.style.animationDelay = (i * 28) + 'ms'; g.append(t); imageURL(a, 't').then(u => { if (u) { const im = el('img'); im.alt = ''; im.src = u; t.append(im); } }).catch(() => {}); });
+  box.append(g);
+  const b = el('button', 'btn primary', 'Keep listening'); b.type = 'button'; b.onclick = () => $('#cele').hidden = true; box.append(b);
+  $('#cele').hidden = false; b.focus({ preventScroll: true });
+}
+window.__celebrate = celebrate;
+
 /* ---------- favourites page ---------- */
 function openFavs() {
   const list = $('#fvList'); list.textContent = '';
   const favs = A.filter(a => isFav(a.n)).sort((p, q) => q.n - p.n);
   $('#fvCount').textContent = favs.length ? favs.length : '';
-  if (!favs.length) list.append(el('p', 'fv-empty', 'No favourites yet. Open an album and tap the heart to add it here.'));
+  if (!favs.length) list.append(el('p', 'fv-empty', 'No favourite albums yet. Open an album and tap the heart to add it here.'));
   for (const a of favs) {
     const x = NOTES[a.n] || {};
     const b = el('button', 'fv-card'); b.type = 'button'; b.style.setProperty('--c', a.col || '');
@@ -836,10 +913,24 @@ function openFavs() {
     b.append(t); b.onclick = () => openAlbum(a.n);
     list.append(b);
   }
+  const withTracks = A.filter(a => NOTES[a.n] && NOTES[a.n].ft && NOTES[a.n].ft.length).sort((p, q) => q.n - p.n);
+  if (withTracks.length) {
+    const total = withTracks.reduce((s, a) => s + NOTES[a.n].ft.length, 0);
+    const h = el('h3', 'fv-sec', 'Favourite tracks'); h.append(el('span', '', ' ' + total)); list.append(h);
+    for (const a of withTracks) {
+      const b = el('button', 'fv-track'); b.type = 'button'; b.style.setProperty('--c', a.col || '');
+      const ph = el('span', 'ph'); b.append(ph);
+      imageURL(a, 't').then(u => { if (!u) return; const i = el('img'); i.alt = ''; i.src = u; ph.replaceWith(i); }).catch(() => {});
+      const t = el('div'); t.append(el('div', 'k', `No. ${a.n} · ${a.title} · ${a.artist}`));
+      const ul = el('ul'); for (const tr of NOTES[a.n].ft) ul.append(el('li', '', tr)); t.append(ul);
+      b.append(t); b.onclick = () => openAlbum(a.n); list.append(b);
+    }
+  }
   $('#favPage').hidden = false; document.body.style.overflow = 'hidden'; $('#fvClose').focus({ preventScroll: true });
 }
 function closeFavs() { $('#favPage').hidden = true; if ($('#sheet').hidden && $('#statsPage').hidden) { document.body.style.overflow = ''; backToNext(); } }
 $('#favsBtn').onclick = openFavs;
+$('#cele').addEventListener('click', e => { if (e.target.id === 'cele') $('#cele').hidden = true; });
 $('#fvClose').onclick = closeFavs;
 
 /* ---------- stats page ---------- */
@@ -1019,8 +1110,8 @@ $('#backupBtn').onclick = () => { $('#backupModal').hidden = false; $('#bkStatus
 $('#syncBtn').addEventListener('click', () => { $('#backupModal').hidden = true; });
 const stamp = () => todayISO();
 function notesPayload() {
-  const notes = Object.values(NOTES).filter(x => x && (x.heard || x.fav || hasNotes(x.n))).sort((a, b) => a.n - b.n)
-    .map(x => ({ n: x.n, artist: A[x.n - 1].artist, title: A[x.n - 1].title, heard: !!x.heard, favourite: !!x.fav, date: x.date || '', headline: x.headline || '', bullets: x.bullets || [], updated: x.updated || '' }));
+  const notes = Object.values(NOTES).filter(x => x && (x.heard || x.fav || (x.ft && x.ft.length) || hasNotes(x.n))).sort((a, b) => a.n - b.n)
+    .map(x => ({ n: x.n, artist: A[x.n - 1].artist, title: A[x.n - 1].title, heard: !!x.heard, favourite: !!x.fav, favouriteTracks: x.ft || [], date: x.date || '', headline: x.headline || '', bullets: x.bullets || [], updated: x.updated || '' }));
   return { app: 'Auditory Range', version: 1, edition: '2013', exported: new Date().toISOString(), count: notes.length, notes };
 }
 function journalMarkdown() {
@@ -1030,6 +1121,7 @@ function journalMarkdown() {
     lines.push(`## ${x.n}. ${a.artist} — ${a.title} (${a.sy})`, '');
     const meta = [x.favourite ? '♥ Favourite' : '', x.heard ? `Heard${x.date ? ' ' + x.date : ''}` : 'Not heard yet', a.am ? `[Apple Music](https://music.apple.com/album/${a.am})` : '', a.wiki ? `[Wikipedia](${a.wiki})` : ''].filter(Boolean).join(' · ');
     lines.push(`*${meta}*`, '');
+    if (x.favouriteTracks && x.favouriteTracks.length) lines.push(`Favourite tracks: ${x.favouriteTracks.join(', ')}`, '');
     if (x.headline) lines.push(`**${x.headline}**`, '');
     for (const b of x.bullets) lines.push(`- ${b.replace(/\n+/g, ' ')}`);
     lines.push('');
@@ -1050,7 +1142,7 @@ $('#imFile').onchange = async e => {
   let ok = 0; $('#bkStatus').textContent = `Restoring ${rows.length} albums…`;
   for (const r of rows) {
     const n = +r.n; if (!(n >= 1 && n <= A.length)) continue;
-    const body = { n, heard: !!r.heard, fav: !!(r.favourite ?? r.fav), date: String(r.date || ''), headline: String(r.headline || ''), bullets: (r.bullets || []).map(String), updated: new Date().toISOString() };
+    const ft = (r.favouriteTracks || r.ft || []).map(String); const body = { n, heard: !!r.heard, fav: !!(r.favourite ?? r.fav), ...(ft.length ? { ft } : {}), date: String(r.date || ''), headline: String(r.headline || ''), bullets: (r.bullets || []).map(String), updated: new Date().toISOString() };
     NOTES[n] = body; pending.add(n); ok++;
     if (ok % 25 === 0) $('#bkStatus').textContent = `Restoring… ${ok} of ${rows.length}`;
   }
@@ -1112,7 +1204,7 @@ function forgetImage(n) { urlCache.delete('t' + n); urlCache.delete('c' + n); }
 const blobB64 = async b => { const u = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
 function refreshImages(n) {
   const a = A[n - 1]; const t = tiles[n];
-  if (t) { const img = t.firstChild; img.classList.remove('on'); loadThumb(t); }
+  if (t) { const img = t.firstChild; img.classList.remove('on'); t.classList.remove('ld'); loadThumb(t); }
   if (current === n) { imageURL(a, 'c').then(u => { if (u) { $('#artImg').src = u; $('#artBlur').hidden = true; } }); }
   if (n === nextUp()) paintHeader(n);
 }
