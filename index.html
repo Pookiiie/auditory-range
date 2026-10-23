@@ -21,7 +21,7 @@
    album detail opens as a full-height sheet over the wall. Covers carry the colour; the UI recedes. */
 :root{
   --bg:#f7f7f7; --surface:#ffffff; --raise:#ececec; --track:#c9c9c9; --ink:#111111; --muted:#5c5c5c; --line:#dcdcdc;
-  --accent:#d63645; --accent-ink:#ffffff; --heard:#1f8a4c; --logo-red:#e0434f; --dim:.42; --dimsat:.2;
+  --accent:#d63645; --accent-ink:#ffffff; --heard:#1f8a4c; --logo-red:#e0434f; --dim:.42; --dimsat:.2; --unheard:saturate(.2) brightness(.9);
   --f-display:"Alegreya", "Iowan Old Style", Georgia, serif;
   --f-ui:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
   --f-mono:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
@@ -30,11 +30,11 @@
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0e0e0f; --surface:#18181a; --raise:#222224; --track:#38383c; --ink:#f2f0ee; --muted:#9a9a9f; --line:#2c2c30;
-  --accent:#f0525e; --accent-ink:#ffffff; --heard:#2a9d5c; --logo-red:#ee4d5a; --dim:.4; --dimsat:.15;
+  --accent:#f0525e; --accent-ink:#ffffff; --heard:#2a9d5c; --logo-red:#ee4d5a; --dim:1; --dimsat:.15; --unheard:brightness(.45) saturate(.6);
   --shadow:0 18px 50px rgba(0,0,0,.55); color-scheme:dark; } }
 :root[data-theme="dark"]{
   --bg:#0e0e0f; --surface:#18181a; --raise:#222224; --track:#38383c; --ink:#f2f0ee; --muted:#9a9a9f; --line:#2c2c30;
-  --accent:#f0525e; --accent-ink:#ffffff; --heard:#2a9d5c; --logo-red:#ee4d5a; --dim:.4; --dimsat:.15;
+  --accent:#f0525e; --accent-ink:#ffffff; --heard:#2a9d5c; --logo-red:#ee4d5a; --dim:1; --dimsat:.15; --unheard:brightness(.45) saturate(.6);
   --shadow:0 18px 50px rgba(0,0,0,.55); color-scheme:dark; }
 
 *{box-sizing:border-box}
@@ -141,7 +141,7 @@ main{max-width:1800px;margin:0 auto;padding-block:8px 80px;padding-inline:16px}
 .tile:not(.ld)::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.16) 50%,transparent 65%);background-size:300% 100%;animation:shim 1.6s linear infinite;pointer-events:none}
 @keyframes shim{from{background-position:100% 0}to{background-position:-100% 0}}
 @media (prefers-reduced-motion: reduce){.tile:not(.ld)::before{animation:none;display:none}.tile img{transform:none}}
-.tile:not(.heard) img{filter:saturate(var(--dimsat)) brightness(.9)}
+.tile:not(.heard) img{filter:var(--unheard)}
 .tile:not(.heard){opacity:var(--dim)}
 .tile:not(.heard):hover,.tile:not(.heard):focus-visible{opacity:1}
 .tile:not(.heard):hover img{filter:none}
@@ -370,6 +370,12 @@ a.iconbtn{color:inherit;text-decoration:none}
 @keyframes celePop{from{transform:scale(.6);opacity:0}}
 @keyframes celeTile{from{transform:scale(.4);opacity:0}}
 @media (prefers-reduced-motion: reduce){.cele,.cele-big,.cele-grid span{animation:none}}
+
+.rx{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
+.rxc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px 5px 9px;font-size:14px;min-height:34px;color:var(--ink)}
+.rxc .e{font-size:16px;line-height:1;filter:grayscale(1);opacity:.6;transition:filter .15s,opacity .15s}
+.rxc[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-weight:600}
+.rxc[aria-pressed="true"] .e{filter:none;opacity:1}
 </style>
 </head>
 <body>
@@ -430,6 +436,7 @@ a.iconbtn{color:inherit;text-decoration:none}
         <div class="journal">
           <h3>My notes <span class="save" id="saveState"></span></h3>
           <div class="row"><label for="dateIn">Listened</label><input type="date" id="dateIn"></div>
+          <div class="rx" id="rxRow"></div>
           <div class="headrow" id="headRow" hidden><textarea class="headline" id="headIn" rows="1" placeholder="One-line takeaway" aria-label="One-line takeaway"></textarea></div>
           <ul class="bullets" id="bullets"></ul>
           <div class="addrow"><button class="btn ghost addb" id="addBullet" type="button">+ Add a point</button><button class="btn ghost addb" id="addHead" type="button">+ Add a takeaway</button></div>
@@ -707,9 +714,9 @@ function note(n) { return NOTES[n] || { heard: false, date: '', headline: '', bu
 let editing = null; // working copy for current album
 function renderNoteEditor() {
   const x = note(current);
-  editing = { heard: !!x.heard, fav: !!x.fav, ft: [...(x.ft || [])], date: x.date || '', headline: x.headline || '', bullets: (x.bullets && x.bullets.length ? [...x.bullets] : ['']) };
+  editing = { heard: !!x.heard, fav: !!x.fav, ft: [...(x.ft || [])], rx: [...(x.rx || [])], date: x.date || '', headline: x.headline || '', bullets: (x.bullets && x.bullets.length ? [...x.bullets] : ['']) };
   dirty = false; setSaveState('');
-  paintHeardBtn(); paintFavBtn(); paintTrackHearts();
+  paintHeardBtn(); paintFavBtn(); paintTrackHearts(); paintReactions();
   $('#dateIn').value = editing.date;
   const h = $('#headIn'); h.value = editing.headline; showHead(!!editing.headline.trim()); autosize(h);
   drawBullets();
@@ -718,6 +725,16 @@ function renderNoteEditor() {
 }
 function showHead(on) { $('#headRow').hidden = !on; $('#addHead').hidden = on; }
 const HEART_SVG = '<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M12 20.3s-7.4-4.5-9.1-9.2C1.7 7.7 3.9 4.6 7.2 4.6c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.3 6.5-1.7 4.7-9.1 9.2-9.1 9.2z"/></svg>';
+const REACTIONS = [['classic', '🔥', 'Instant classic'], ['revisit', '🔁', 'Revisit'], ['click', '🧊', 'Didn’t quite click']];
+function paintReactions() {
+  const row = $('#rxRow'); if (!row || !editing) return; row.textContent = '';
+  for (const [k, e, label] of REACTIONS) {
+    const b = el('button', 'rxc'); b.type = 'button'; b.setAttribute('aria-pressed', editing.rx.includes(k)); b.disabled = !canWrite;
+    b.append(el('span', 'e', e), label);
+    b.onclick = () => { const i = editing.rx.indexOf(k); if (i >= 0) editing.rx.splice(i, 1); else editing.rx.push(k); paintReactions(); dirty = true; setSaveState('Saving…'); flushSave(); };
+    row.append(b);
+  }
+}
 function paintTrackHearts() { if (!editing) return; document.querySelectorAll('#aTracks .tfav').forEach(b => { const on = editing.ft.includes(b.dataset.t); b.setAttribute('aria-pressed', on); b.title = on ? 'Remove from favourite tracks' : 'Add to favourite tracks'; }); }
 function toggleTrack(t) {
   if (!canWrite || !current) return;
@@ -760,7 +777,7 @@ function flushSave() {
   if (!dirty || !current) return;
   dirty = false;
   const n = current;
-  const body = { n, heard: !!editing.heard, fav: !!editing.fav, ...(editing.ft && editing.ft.length ? { ft: [...editing.ft] } : {}), date: editing.date || '', headline: editing.headline.trim() ? editing.headline : '', bullets: editing.bullets.filter(b => b.trim()), updated: new Date().toISOString() };
+  const body = { n, heard: !!editing.heard, fav: !!editing.fav, ...(editing.ft && editing.ft.length ? { ft: [...editing.ft] } : {}), ...(editing.rx && editing.rx.length ? { rx: [...editing.rx] } : {}), date: editing.date || '', headline: editing.headline.trim() ? editing.headline : '', bullets: editing.bullets.filter(b => b.trim()), updated: new Date().toISOString() };
   NOTES[n] = body; paintTiles();
   markChanged(n); setSaveState(syncCfg ? 'Saved' : 'Saved on this device');
 }
@@ -1093,6 +1110,15 @@ function openStats() {
     const sg = el('div', 'statgrid');
     for (const [v, l] of [[A.length - heard.length, 'still to go'], [withNotes, 'with notes'], [favs, favs === 1 ? 'favourite' : 'favourites']]) { const b = el('div', 'stat'); b.append(el('b', '', v), el('span', '', l)); sg.append(b); }
     s.append(sg);
+    const rxc = REACTIONS.map(([k, e, l]) => [e, l, A.filter(a => NOTES[a.n] && (NOTES[a.n].rx || []).includes(k))]);
+    if (rxc.some(r => r[2].length)) {
+      s.append(el('h4', '', 'Reactions'));
+      const rg = el('div', 'statgrid');
+      for (const [e, l, list] of rxc) { const b = el('div', 'stat'); b.append(el('b', '', `${e} ${list.length}`), el('span', '', l)); rg.append(b); }
+      s.append(rg);
+      const rv = rxc[1][2];
+      if (rv.length) { s.append(el('h4', '', '🔁 To revisit')); const l = el('div', 'st-albs'); for (const a of rv.slice().sort((p, q) => q.n - p.n)) l.append(albumRow(a, `No. ${a.n} · ${a.sy}`)); s.append(l); }
+    }
     const bars = (title, rows, max) => { s.append(el('h4', '', title)); for (const [k, v, lbl] of rows) { const r = el('div', 'hbar'); const tr = el('div', 'track'); const i = el('i'); i.style.width = (v / max * 100) + '%'; tr.append(i); r.append(el('span', '', k), tr, el('span', 'v', lbl ?? v)); s.append(r); } };
     const decs = {}; for (const a of A) { const d = Math.floor(a.sy / 10) * 10; (decs[d] ||= [0, 0]); decs[d][1]++; if (isHeard(a.n)) decs[d][0]++; }
     bars('By decade of release', Object.entries(decs).map(([d, [h, t]]) => [d + 's', h, `${h}/${t}`]), Math.max(...Object.values(decs).map(x => x[1])));
@@ -1110,8 +1136,8 @@ $('#backupBtn').onclick = () => { $('#backupModal').hidden = false; $('#bkStatus
 $('#syncBtn').addEventListener('click', () => { $('#backupModal').hidden = true; });
 const stamp = () => todayISO();
 function notesPayload() {
-  const notes = Object.values(NOTES).filter(x => x && (x.heard || x.fav || (x.ft && x.ft.length) || hasNotes(x.n))).sort((a, b) => a.n - b.n)
-    .map(x => ({ n: x.n, artist: A[x.n - 1].artist, title: A[x.n - 1].title, heard: !!x.heard, favourite: !!x.fav, favouriteTracks: x.ft || [], date: x.date || '', headline: x.headline || '', bullets: x.bullets || [], updated: x.updated || '' }));
+  const notes = Object.values(NOTES).filter(x => x && (x.heard || x.fav || (x.ft && x.ft.length) || (x.rx && x.rx.length) || hasNotes(x.n))).sort((a, b) => a.n - b.n)
+    .map(x => ({ n: x.n, artist: A[x.n - 1].artist, title: A[x.n - 1].title, heard: !!x.heard, favourite: !!x.fav, favouriteTracks: x.ft || [], reactions: (x.rx || []).map(k => (REACTIONS.find(r => r[0] === k) || [k, '', k])[2]), date: x.date || '', headline: x.headline || '', bullets: x.bullets || [], updated: x.updated || '' }));
   return { app: 'Auditory Range', version: 1, edition: '2013', exported: new Date().toISOString(), count: notes.length, notes };
 }
 function journalMarkdown() {
@@ -1121,6 +1147,7 @@ function journalMarkdown() {
     lines.push(`## ${x.n}. ${a.artist} — ${a.title} (${a.sy})`, '');
     const meta = [x.favourite ? '♥ Favourite' : '', x.heard ? `Heard${x.date ? ' ' + x.date : ''}` : 'Not heard yet', a.am ? `[Apple Music](https://music.apple.com/album/${a.am})` : '', a.wiki ? `[Wikipedia](${a.wiki})` : ''].filter(Boolean).join(' · ');
     lines.push(`*${meta}*`, '');
+    if (x.reactions && x.reactions.length) lines.push(x.reactions.map(r => { const m = REACTIONS.find(q => q[2] === r); return (m ? m[1] + ' ' : '') + r; }).join(' · '), '');
     if (x.favouriteTracks && x.favouriteTracks.length) lines.push(`Favourite tracks: ${x.favouriteTracks.join(', ')}`, '');
     if (x.headline) lines.push(`**${x.headline}**`, '');
     for (const b of x.bullets) lines.push(`- ${b.replace(/\n+/g, ' ')}`);
@@ -1142,7 +1169,7 @@ $('#imFile').onchange = async e => {
   let ok = 0; $('#bkStatus').textContent = `Restoring ${rows.length} albums…`;
   for (const r of rows) {
     const n = +r.n; if (!(n >= 1 && n <= A.length)) continue;
-    const ft = (r.favouriteTracks || r.ft || []).map(String); const body = { n, heard: !!r.heard, fav: !!(r.favourite ?? r.fav), ...(ft.length ? { ft } : {}), date: String(r.date || ''), headline: String(r.headline || ''), bullets: (r.bullets || []).map(String), updated: new Date().toISOString() };
+    const ft = (r.favouriteTracks || r.ft || []).map(String); const rx = (r.rx || (r.reactions || []).map(l => (REACTIONS.find(q => q[2] === l) || [])[0]).filter(Boolean)); const body = { n, heard: !!r.heard, fav: !!(r.favourite ?? r.fav), ...(ft.length ? { ft } : {}), ...(rx.length ? { rx } : {}), date: String(r.date || ''), headline: String(r.headline || ''), bullets: (r.bullets || []).map(String), updated: new Date().toISOString() };
     NOTES[n] = body; pending.add(n); ok++;
     if (ok % 25 === 0) $('#bkStatus').textContent = `Restoring… ${ok} of ${rows.length}`;
   }

@@ -1,5 +1,5 @@
 // Auditory Range service worker: keeps the app usable offline and fast on repeat visits.
-const V = 'ar-v4';
+const V = 'ar-v5';
 const M = 'ar-media-2';
 const SHELL = ['./', 'index.html', 'catalog.json', 'manifest.webmanifest', 'icon-192.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
